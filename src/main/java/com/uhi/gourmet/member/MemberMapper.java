@@ -15,9 +15,6 @@ public interface MemberMapper {
 	// [회원가입용] 아이디 중복확인
 	int idCheck(String user_id);
 
-	/*
-	 * // [점주가입용] 가게 정보 저장하기 void insertStore(StoreVO vo);
-	 */
 	// 아이디를 통해 해당 유저의 모든 정보(아이디, 비번, 권한 포함)를 가져오는 메서드
 	MemberVO selectMember(String user_id);
 }
