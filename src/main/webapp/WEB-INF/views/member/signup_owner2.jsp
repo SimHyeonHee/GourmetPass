@@ -6,7 +6,6 @@
 <meta charset="UTF-8">
 <title>점주 회원가입 - 2단계 (가게 정보)</title>
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-<%-- 카카오 지도 API: 컨트롤러에서 전달받은 kakaoJsKey 사용 --%>
 <script type="text/javascript" 
         src="//dapi.kakao.com/v2/maps/sdk.js?appkey=${kakaoJsKey}&libraries=services"></script>
 <script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
@@ -21,11 +20,15 @@
 </head>
 <body>
     <h2 align="center">점주 회원가입 - 2단계 (가게 정보)</h2>
-    <p align="center" class="step-info">사장님 계정 생성이 완료되었습니다. 이제 운영하실 <b>가게 정보</b>를 입력해주세요.</p>
+    <p align="center" class="step-info">사장님 계정 생성이 완료되었습니다.
+    이제 운영하실 <b>가게 정보</b>를 입력해주세요.</p>
     
-    <form action="${pageContext.request.contextPath}/join/ownerFinal.do" method="post" id="ownerStep2Form">
+    <%-- 경로 수정: /member/signup/ownerFinal --%>
+    <form action="${pageContext.request.contextPath}/member/signup/ownerFinal" method="post" id="ownerStep2Form">
         
-        <%-- [중요] 가게 위치 좌표 (StoreVO의 store_lat/lon에 매핑) --%>
+        <%-- CSRF 토큰 추가 --%>
+        <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}" />
+        
         <input type="hidden" name="store_lat" id="store_lat" value="0.0">
         <input type="hidden" name="store_lon" id="store_lon" value="0.0">
 
@@ -71,7 +74,6 @@
     </form>
 
 <script>
-    // 주소 API 및 좌표 추출 (Kakao Maps Geocoder 사용)
     const geocoder = new kakao.maps.services.Geocoder();
 
     function execDaumPostcode() {
@@ -84,8 +86,6 @@
                 geocoder.addressSearch(addr, function(results, status) {
                     if (status === kakao.maps.services.Status.OK) {
                         var result = results[0];
-                        
-                        // StoreVO의 컬럼명 store_lat, store_lon에 값 할당
                         document.getElementById('store_lat').value = result.y;
                         document.getElementById('store_lon').value = result.x;
                         
@@ -100,14 +100,12 @@
         }).open();
     }
 
-    // 전화번호 자동 하이픈
     const autoHyphen = (target) => {
         target.value = target.value
             .replace(/[^0-9]/g, '')
             .replace(/^(\d{0,3})(\d{0,4})(\d{0,4})$/g, "$1-$2-$3").replace(/(\-{1,2})$/g, "");
     }
 
-    // 최종 폼 제출 확인
     $("#ownerStep2Form").submit(function() {
         if($("#store_lat").val() == "0.0") {
             alert("가게 주소 검색을 통해 위치를 지정해주세요.");

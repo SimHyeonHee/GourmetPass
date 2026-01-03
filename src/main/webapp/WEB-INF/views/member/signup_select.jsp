@@ -7,7 +7,7 @@
 <style>
     .container { text-align: center; margin-top: 100px; }
     .select-box { 
-        display: inline-block; width: 250px; height: 300px; 
+        display: inline-block; width: 250px; height: 300px;
         border: 1px solid #ddd; margin: 20px; border-radius: 10px;
         padding: 30px; vertical-align: middle; cursor: pointer;
         transition: 0.3s;
@@ -25,7 +25,8 @@
     <h2>회원가입 유형을 선택해주세요</h2>
     <p>어떤 목적으로 Gourmet Pass를 이용하시나요?</p>
     
-    <a href="${pageContext.request.contextPath}/join/general.do">
+    <%-- 경로 수정: /member/signup/general --%>
+    <a href="${pageContext.request.contextPath}/member/signup/general">
         <div class="select-box">
             <div class="icon">😊</div>
             <div class="title">일반 회원</div>
@@ -35,7 +36,8 @@
         </div>
     </a>
 
-    <a href="${pageContext.request.contextPath}/join/owner1.do">
+    <%-- 경로 수정: /member/signup/owner1 --%>
+    <a href="${pageContext.request.contextPath}/member/signup/owner1">
         <div class="select-box">
             <div class="icon">👨‍🍳</div>
             <div class="title">점주 회원</div>

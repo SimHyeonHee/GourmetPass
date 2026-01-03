@@ -7,8 +7,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
@@ -16,6 +16,7 @@ import com.uhi.gourmet.store.StoreMapper;
 import com.uhi.gourmet.store.StoreVO;
 
 @Controller
+@RequestMapping("/member") // 기본 경로를 /member 로 잡아서 체계화
 public class MemberController {
 
     @Autowired
@@ -32,113 +33,104 @@ public class MemberController {
     private String kakaoJsKey;
 
     /**
-     * [0] 공통: 회원가입 페이지에 카카오 키 전달을 위한 헬퍼 메서드
-     * 여러 가입 페이지에서 공통으로 사용하기 위해 추출함
+     * [0] 공통: 카카오 키 주입 헬퍼
      */
     private void addKakaoKeyToModel(Model model) {
-        System.out.println(">>> Kakao Key Load Check: " + kakaoJsKey);
         model.addAttribute("kakaoJsKey", kakaoJsKey);
     }
 
-    // [1] 메인/로그인 화면
-    @RequestMapping(value = { "/", "/login.do" }, method = RequestMethod.GET)
-    public String index() {
+    // ================= [로그인 & 로그아웃] =================
+    // Spring Security가 가로채서 처리하므로, 여기서는 페이지만 보여주면 됨.
+    
+    // [1] 로그인 페이지 이동
+    @GetMapping("/login") // 호출경로: /member/login
+    public String loginPage() {
         return "member/login";
     }
-
-    // [2] 로그인 처리
-    @RequestMapping(value = "/login.do", method = RequestMethod.POST)
-    public String login(MemberVO vo, HttpSession session) {
-        String dbPw = memberMapper.getPassword(vo.getUser_id());
-
-        if (dbPw != null && pwEncoder.matches(vo.getUser_pw(), dbPw)) {
-            session.setAttribute("loginID", vo.getUser_id());
-            return "member/main";
-        } else {
-            return "redirect:/?error=true";
-        }
-    }
-
-    // [3] 로그아웃
-    @RequestMapping(value = "/logout.do", method = RequestMethod.GET)
-    public String logout(HttpSession session) {
-        session.invalidate();
-        return "member/logoutMsg";
-    }
-
+    
+    // [주의] 로그인 처리(POST)와 로그아웃 처리는 컨트롤러에 만들지 않습니다.
+    // security-context.xml 설정에 따라 스프링 시큐리티 필터가 자동으로 처리합니다.
+    
     // ================= [회원가입 공통/일반] =================
 
-    // [4-1] 회원가입 유형 선택 페이지
-    @RequestMapping(value = "/join/select.do", method = RequestMethod.GET)
+    // [2] 회원가입 유형 선택 페이지
+    @GetMapping("/signup/select") // 호출경로: /member/signup/select
     public String joinSelect() {
         return "member/signup_select";
     }
 
-    // [4-2] 일반 회원가입 페이지 이동 (카카오 키 전달 포함)
-    @RequestMapping(value = "/join/general.do", method = RequestMethod.GET)
+    // [3] 일반 회원가입 페이지 이동
+    @GetMapping("/signup/general") // 호출경로: /member/signup/general
     public String joinGeneralPage(Model model) {
-        addKakaoKeyToModel(model); // 카카오 키 주입
+        addKakaoKeyToModel(model); 
         return "member/signup_general";
     }
 
-    // [4-3] 일반 회원가입 처리 (암호화 + 좌표 저장)
-    @RequestMapping(value = "/joinProcess.do", method = RequestMethod.POST)
+    // [4] 일반 회원가입 처리 (DB 저장)
     public String joinProcess(MemberVO vo) {
-        String encodePw = pwEncoder.encode(vo.getUser_pw());
+        String encodePw = pwEncoder.encode(vo.getUser_pw()); 
         vo.setUser_pw(encodePw);
+        
+        // [보완] 일반 회원가입 시에도 권한을 명시적으로 넣어줘야 합니다.
+        // 이 코드가 없으면 나중에 로그인해도 ROLE_USER 권한이 없어서 마이페이지 접근이 안 됩니다.
+        vo.setUser_role("ROLE_USER"); 
+        
         memberMapper.join(vo);
-        return "redirect:/";
+        return "redirect:/member/login"; 
     }
 
     // ================= [점주 회원가입: 멀티 페이지 방식] =================
 
-    // [5-1] 점주 가입 1단계: 사장님 개인 정보 입력 페이지 (카카오 키 전달 포함)
-    @RequestMapping(value = "/join/owner1.do", method = RequestMethod.GET)
+    // [5] 점주 가입 1단계: 개인 정보 입력
+    @GetMapping("/signup/owner1") // 호출경로: /member/signup/owner1
     public String ownerStep1(Model model) {
-        addKakaoKeyToModel(model); // 카카오 키 주입
+        addKakaoKeyToModel(model);
         return "member/signup_owner1";
     }
 
-    // [5-2] 1단계 데이터 처리: 세션 저장 및 2단계 이동
-    @RequestMapping(value = "/join/ownerStep1.do", method = RequestMethod.POST)
+    // [6] 1단계 처리 -> 세션 저장 -> 2단계 이동
+    @PostMapping("/signup/ownerStep1")
     public String ownerStep1Process(MemberVO memberVo, HttpSession session) {
         session.setAttribute("tempMember", memberVo);
-        return "redirect:/join/owner2.do";
+        return "redirect:/member/signup/owner2";
     }
 
-    // [5-3] 점주 가입 2단계: 가게 정보 입력 페이지 (카카오 키 전달 포함)
-    @RequestMapping(value = "/join/owner2.do", method = RequestMethod.GET)
+    // [7] 점주 가입 2단계: 가게 정보 입력
+    @GetMapping("/signup/owner2")
     public String ownerStep2(HttpSession session, Model model) {
         if (session.getAttribute("tempMember") == null) {
-            return "redirect:/join/owner1.do";
+            return "redirect:/member/signup/owner1";
         }
-        addKakaoKeyToModel(model); // 카카오 키 주입
+        addKakaoKeyToModel(model);
         return "member/signup_owner2";
     }
 
-    // [5-4] 최종 가입 처리: 세션 데이터(회원) + 폼 데이터(가게) 합쳐서 DB 저장
-    @RequestMapping(value = "/join/ownerFinal.do", method = RequestMethod.POST)
+    // [8] 최종 가입 처리 (회원정보 + 가게정보)
+    @PostMapping("/signup/ownerFinal")
     public String ownerFinalProcess(StoreVO storeVo, HttpSession session) {
         MemberVO memberVo = (MemberVO) session.getAttribute("tempMember");
-        if (memberVo == null) return "redirect:/join/owner1.do";
+        if (memberVo == null) return "redirect:/member/signup/owner1";
 
+        // 1. 회원 정보 저장 (암호화 + 권한 설정)
         String encodePw = pwEncoder.encode(memberVo.getUser_pw());
         memberVo.setUser_pw(encodePw);
-        memberVo.setUser_role("ROLE_OWNER");
-
+        memberVo.setUser_role("ROLE_OWNER"); // 점주 권한 부여
         memberMapper.join(memberVo);
 
+        // 2. 가게 정보 저장
         storeVo.setUser_id(memberVo.getUser_id());
-        storeMapper.insertStore(storeVo);
+        storeMapper.insertStore(storeVo); // StoreMapper 필요
 
+        // 3. 임시 세션 제거
         session.removeAttribute("tempMember");
-        return "redirect:/login.do";
+        
+        return "redirect:/member/login";
     }
 
-    // ================= [공통 기능] =================
+    // ================= [AJAX 공통 기능] =================
 
-    // [6] 아이디 중복 확인 (AJAX)
-    @RequestMapping(value = "/idCheck.do", method = RequestMethod.POST)
+    // [9] 아이디 중복 확인
+    @PostMapping("/idCheck")
     @ResponseBody
     public String idCheck(@RequestParam("user_id") String user_id) {
         int count = memberMapper.idCheck(user_id);

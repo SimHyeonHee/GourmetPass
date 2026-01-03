@@ -5,13 +5,10 @@
 <meta charset="UTF-8">
 <title>일반 회원가입</title>
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-<%-- 카카오 지도 API: 컨트롤러에서 전달받은 kakaoJsKey 사용 --%>
-<script type="text/javascript" 
-        src="//dapi.kakao.com/v2/maps/sdk.js?appkey=${kakaoJsKey}&libraries=services"></script>
+<script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=${kakaoJsKey}&libraries=services"></script>
 <script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
 
 <style>
-    /* 상태 메시지 스타일 */
     .msg-ok { color: green; font-size: 12px; font-weight: bold; }
     .msg-no { color: red; font-size: 12px; font-weight: bold; }
     table { margin-top: 20px; border-collapse: collapse; }
@@ -21,8 +18,12 @@
 <body>
     <h2 align="center">일반 회원가입</h2>
 
-    <form action="${pageContext.request.contextPath}/joinProcess.do" method="post" id="joinForm">
-        <%-- [변경] 좌표용 히든 필드: DB 컬럼명 user_lat, user_lon에 맞춤 --%>
+    <%-- 경로 수정 --%>
+    <form action="${pageContext.request.contextPath}/member/signup/general" method="post" id="joinForm">
+        
+        <%-- CSRF 토큰 필수 --%>
+        <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}" />
+        
         <input type="hidden" name="user_lat" id="user_lat" value="0.0">
         <input type="hidden" name="user_lon" id="user_lon" value="0.0">
 
@@ -37,9 +38,7 @@
             </tr>
             <tr>
                 <td>비밀번호</td>
-                <td>
-                    <input type="password" name="user_pw" id="user_pw" placeholder="비밀번호" required>
-                </td>
+                <td><input type="password" name="user_pw" id="user_pw" placeholder="비밀번호" required></td>
             </tr>
             <tr>
                 <td>비밀번호 확인</td>
@@ -59,7 +58,7 @@
             <tr>
                 <td>전화번호</td>
                 <td>
-                    <input type="text" name="user_tel" required placeholder="숫자만 입력하세요"
+                   <input type="text" name="user_tel" required placeholder="숫자만 입력하세요"
                            maxlength="13" oninput="autoHyphen(this)">
                 </td>
             </tr>
@@ -85,28 +84,26 @@
     </form>
 
     <script>
-    // 1. 상태 플래그
     let isIdChecked = false; 
     let isPwMatched = false; 
 
-    // 2. 아이디 중복 체크 (AJAX)
     $("#btnIdCheck").click(function() {
         const userId = $("#user_id").val();
-        if(userId.length < 3) { 
-            alert("아이디는 3글자 이상 입력해주세요."); 
-            return; 
-        }
+        if(userId.length < 3) { alert("아이디는 3글자 이상 입력해주세요."); return; }
 
         $.ajax({
-            url: "${pageContext.request.contextPath}/idCheck.do",
+            url: "${pageContext.request.contextPath}/member/idCheck", // 경로 수정
             type: "POST",
-            data: { user_id: userId },
+            data: { 
+                user_id: userId,
+                "${_csrf.parameterName}": "${_csrf.token}" // AJAX에도 CSRF 토큰 전송 필수
+            },
             success: function(res) {
                 if(res === "success") { 
                     $("#idCheckMsg").html("<span class='msg-ok'>사용 가능한 아이디입니다.</span>"); 
                     isIdChecked = true; 
                 } else { 
-                    $("#idCheckMsg").html("<span class='msg-no'>이미 사용 중인 아이디입니다.</span>"); 
+                    $("#idCheckMsg").html("<span class='msg-no'>이미 사용 중인 아이디입니다.</span>");
                     isIdChecked = false; 
                 }
             },
@@ -114,20 +111,13 @@
         });
     });
 
-    $("#user_id").on("input", function() { 
-        isIdChecked = false; 
-        $("#idCheckMsg").text(""); 
-    });
+    $("#user_id").on("input", function() { isIdChecked = false; $("#idCheckMsg").text(""); });
 
-    // 3. 비밀번호 일치 확인
     $("#user_pw, #user_pw_confirm").on("keyup", function() {
         const pw = $("#user_pw").val();
         const pwConfirm = $("#user_pw_confirm").val();
         
-        if(pw === "" && pwConfirm === "") { 
-            $("#pwCheckMsg").text(""); 
-            return; 
-        }
+        if(pw === "" && pwConfirm === "") { $("#pwCheckMsg").text(""); return; }
         
         if(pw === pwConfirm) { 
             $("#pwCheckMsg").html("<span class='msg-ok'>비밀번호가 일치합니다.</span>"); 
@@ -138,24 +128,13 @@
         }
     });
 
-    // 4. 폼 전송 시 최종 검사
     $("#joinForm").submit(function() {
-        if(!isIdChecked) {
-            alert("아이디 중복확인을 해주세요.");
-            $("#user_id").focus();
-            return false;
-        }
-        if(!isPwMatched) {
-            alert("비밀번호가 일치하지 않습니다.");
-            $("#user_pw").focus();
-            return false;
-        }
+        if(!isIdChecked) { alert("아이디 중복확인을 해주세요."); $("#user_id").focus(); return false; }
+        if(!isPwMatched) { alert("비밀번호가 일치하지 않습니다."); $("#user_pw").focus(); return false; }
         return true;
     });
 
-    // 5. 주소 API 및 좌표 추출 (Kakao Maps SDK 활용)
     const geocoder = new kakao.maps.services.Geocoder();
-
     function execDaumPostcode() {
         new daum.Postcode({
             oncomplete: function(data) {
@@ -166,11 +145,8 @@
                 geocoder.addressSearch(addr, function(results, status) {
                     if (status === kakao.maps.services.Status.OK) {
                         var result = results[0];
-                        
-                        // [변경] 히든 필드에 좌표값 할당
                         document.getElementById('user_lat').value = result.y;
                         document.getElementById('user_lon').value = result.x;
-                        
                         var msg = "📍 좌표 추출 완료! (위도: " + result.y + ", 경도: " + result.x + ")";
                         $("#coordStatus").html("<span class='msg-ok'>" + msg + "</span>");
                     } else {
@@ -182,7 +158,6 @@
         }).open();
     }
 
-    // 6. 전화번호 자동 하이픈
     const autoHyphen = (target) => {
         target.value = target.value
             .replace(/[^0-9]/g, '')

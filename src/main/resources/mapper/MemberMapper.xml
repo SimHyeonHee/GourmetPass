@@ -3,42 +3,47 @@
 
 <mapper namespace="com.uhi.gourmet.member.MemberMapper">
 
-<!-- MemberMapper.java의 getPassword() 메서드 구현. 반환값도 일치해야 함 -->
-    <select id="getPassword" resultType="string">
-        SELECT user_pw FROM MEMBERS 
-        WHERE user_id = #{user_id} AND enabled = 'Y'
-    </select>
+	<!-- MemberMapper.java의 getPassword() 메서드 구현. 반환값도 일치해야 함 -->
+	<select id="getPassword" resultType="string">
+		SELECT user_pw FROM MEMBERS
+		WHERE user_id = #{user_id} AND enabled = 'Y'
+	</select>
 
-<!-- MemberMapper.java의 join() 메서드 구현. void니까 반환값 X -->
-    <insert id="join">
-        INSERT INTO MEMBERS (
-            user_id, 
-            user_pw, 
-            user_nm, 
-            user_email, 
-            user_tel, 
-            user_zip, 
-            user_addr1, 
-            user_addr2, 
-            user_lat, 
-            user_lon
-        ) VALUES (
-            #{user_id}, 
-            #{user_pw}, 
-            #{user_nm},
-            #{user_email, jdbcType=VARCHAR}, 
-            #{user_tel}, 
-            #{user_zip, jdbcType=VARCHAR}, 
-            #{user_addr1, jdbcType=VARCHAR}, 
-            #{user_addr2, jdbcType=VARCHAR}, 
-            #{user_lat, jdbcType=NUMERIC}, 
-            #{user_lon, jdbcType=NUMERIC}
-        )
-    </insert>
-    
-    <select id="idCheck" resultType="int">
-		SELECT COUNT(*) FROM MEMBERS 
+	<!-- MemberMapper.java의 join() 메서드 구현. void니까 반환값 X -->
+	<insert id="join">
+		INSERT INTO MEMBERS (
+		user_id,
+		user_pw,
+		user_nm,
+		user_email,
+		user_tel,
+		user_zip,
+		user_addr1,
+		user_addr2,
+		user_lat,
+		user_lon
+		) VALUES (
+		#{user_id},
+		#{user_pw},
+		#{user_nm},
+		#{user_email, jdbcType=VARCHAR},
+		#{user_tel},
+		#{user_zip, jdbcType=VARCHAR},
+		#{user_addr1, jdbcType=VARCHAR},
+		#{user_addr2, jdbcType=VARCHAR},
+		#{user_lat, jdbcType=NUMERIC},
+		#{user_lon, jdbcType=NUMERIC}
+		)
+	</insert>
+
+	<select id="idCheck" resultType="int">
+		SELECT COUNT(*) FROM MEMBERS
 		WHERE user_id = #{user_id}
+	</select>
+
+	<select id="selectMember"
+		resultType="com.uhi.gourmet.member.MemberVO">
+		SELECT * FROM MEMBERS WHERE user_id = #{user_id}
 	</select>
 
 </mapper>
