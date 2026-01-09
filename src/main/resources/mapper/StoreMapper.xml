@@ -6,12 +6,10 @@
 	<insert id="insertStore"
 		parameterType="com.uhi.gourmet.store.StoreVO">
 		INSERT INTO STORE (
-		store_id, user_id, store_name,
-		store_tel, store_zip,
+		store_id, user_id, store_name, store_tel, store_zip,
 		store_addr1, store_addr2, store_lat, store_lon,
-		store_category, store_desc,
-		open_time, close_time, res_unit, store_img,
-		store_cnt
+		store_category, store_desc, open_time, close_time,
+		res_unit, store_img, store_cnt
 		) VALUES (
 		SEQ_STORE.NEXTVAL,
 		#{user_id, jdbcType=VARCHAR},
@@ -23,7 +21,7 @@
 		#{store_lat, jdbcType=NUMERIC},
 		#{store_lon, jdbcType=NUMERIC},
 		#{store_category, jdbcType=VARCHAR},
-		#{store_desc, jdbcType=VARCHAR},
+		#{store_desc, jdbcType=CLOB},
 		#{open_time, jdbcType=VARCHAR},
 		#{close_time, jdbcType=VARCHAR},
 		#{res_unit, jdbcType=INTEGER},
@@ -44,15 +42,13 @@
 	<select id="getListStore"
 		resultType="com.uhi.gourmet.store.StoreVO">
 		SELECT * FROM STORE
-		<where>
-			<if test="category != null and category != ''">
-				AND store_category = #{category}
-			</if>
-			<if test="region != null and region != ''">
-				AND store_addr1 LIKE '%' || #{region} || '%'
-			</if>
-		</where>
-		ORDER BY store_cnt DESC
+		WHERE 1=1
+		<if test="category != null and category != ''"> AND store_category = #{category} </if>
+		<if test="region != null and region != ''"> AND store_addr1 LIKE '%' || #{region} || '%' </if>
+		<if test="keyword != null and keyword != ''">
+			AND store_name LIKE '%' || #{keyword} || '%'
+		</if>
+		ORDER BY store_id DESC
 	</select>
 
 	<select id="getStoreDetail" parameterType="int"
@@ -62,48 +58,36 @@
 
 	<select id="getStoreByUserId" parameterType="string"
 		resultType="com.uhi.gourmet.store.StoreVO">
-		SELECT * FROM (
 		SELECT * FROM STORE
-		WHERE user_id =
-		#{user_id}
-		ORDER BY store_id DESC
-		) WHERE ROWNUM = 1
+		WHERE user_id = #{user_id}
 	</select>
 
 	<select id="getMenuList" parameterType="int"
 		resultType="com.uhi.gourmet.store.MenuVO">
-		SELECT * FROM MENU WHERE store_id = #{store_id}
+		SELECT * FROM MENU WHERE store_id = #{store_id} ORDER BY menu_id ASC
 	</select>
 
 	<update id="updateViewCount" parameterType="int">
-		UPDATE STORE SET
-		store_cnt = store_cnt + 1 WHERE store_id = #{store_id}
+		UPDATE STORE SET store_cnt = store_cnt + 1 WHERE store_id = #{store_id}
 	</update>
 
 	<update id="updateStore"
 		parameterType="com.uhi.gourmet.store.StoreVO">
 		UPDATE STORE
-		SET store_name = #{store_name,
-		jdbcType=VARCHAR},
-		store_category = #{store_category,
-		jdbcType=VARCHAR},
+		SET store_name = #{store_name, jdbcType=VARCHAR},
+		store_category = #{store_category, jdbcType=VARCHAR},
 		store_tel = #{store_tel, jdbcType=VARCHAR},
 		store_addr1 = #{store_addr1, jdbcType=VARCHAR},
-		store_addr2 =
-		#{store_addr2, jdbcType=VARCHAR},
-		store_zip = #{store_zip,
-		jdbcType=VARCHAR},
+		store_addr2 = #{store_addr2, jdbcType=VARCHAR},
+		store_zip = #{store_zip, jdbcType=VARCHAR},
 		store_lat = #{store_lat, jdbcType=NUMERIC},
 		store_lon = #{store_lon, jdbcType=NUMERIC},
-		open_time = #{open_time,
-		jdbcType=VARCHAR},
+		open_time = #{open_time, jdbcType=VARCHAR},
 		close_time = #{close_time, jdbcType=VARCHAR},
 		res_unit = #{res_unit, jdbcType=INTEGER},
-		store_desc = #{store_desc,
-		jdbcType=VARCHAR},
+		store_desc = #{store_desc, jdbcType=CLOB},
 		store_img = #{store_img, jdbcType=VARCHAR}
-		WHERE
-		store_id = #{store_id}
+		WHERE store_id = #{store_id}
 	</update>
 
 	<insert id="insertMenu"
@@ -121,19 +105,16 @@
 	</insert>
 
 	<delete id="deleteMenu" parameterType="int">
-		DELETE FROM MENU WHERE
-		menu_id = #{menu_id}
+		DELETE FROM MENU WHERE menu_id = #{menu_id}
 	</delete>
 
 	<update id="updateMenu"
 		parameterType="com.uhi.gourmet.store.MenuVO">
 		UPDATE MENU
-		SET menu_name = #{menu_name,
-		jdbcType=VARCHAR},
+		SET menu_name = #{menu_name, jdbcType=VARCHAR},
 		menu_price = #{menu_price, jdbcType=NUMERIC},
 		menu_img = #{menu_img, jdbcType=VARCHAR},
-		menu_sign = #{menu_sign,
-		jdbcType=VARCHAR}
+		menu_sign = #{menu_sign, jdbcType=VARCHAR}
 		WHERE menu_id = #{menu_id, jdbcType=NUMERIC}
 	</update>
 

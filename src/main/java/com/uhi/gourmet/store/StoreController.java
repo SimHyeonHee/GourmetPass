@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.io.File;
 import java.io.IOException;
+import java.security.Principal;
+
 import javax.servlet.http.HttpServletRequest;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,24 +26,28 @@ import org.springframework.web.multipart.MultipartFile;
 public class StoreController {
 
     @Autowired
-    private StoreMapper storeMapper;
+    private StoreService storeService; // [수정] Mapper 대신 Service 주입
 
-    // api.properties에서 카카오 JS 키 로드
     @Value("${kakao.js.key}")
     private String kakaoJsKey;
+
+    // ================= [맛집 조회 (Public)] =================
 
     // 1. 맛집 목록 조회
     @GetMapping("/list")
     public String storeList(
             @RequestParam(value = "category", required = false) String category,
             @RequestParam(value = "region", required = false) String region,
+            @RequestParam(value = "keyword", required = false) String keyword, // 추가
             Model model) {
         
-        List<StoreVO> storeList = storeMapper.getListStore(category, region);
+        // 서비스 호출 시 keyword 포함
+        List<StoreVO> storeList = storeService.getStoreList(category, region, keyword);
         
         model.addAttribute("storeList", storeList); 
         model.addAttribute("category", category);
         model.addAttribute("region", region);
+        model.addAttribute("keyword", keyword); // 검색창에 입력값 유지를 위해 추가
         
         return "store/store_list";
     }
@@ -49,9 +55,11 @@ public class StoreController {
     // 2. 맛집 상세 정보 조회
     @GetMapping("/detail")
     public String storeDetail(@RequestParam("storeId") int storeId, Model model) {
-        storeMapper.updateViewCount(storeId);
-        StoreVO store = storeMapper.getStoreDetail(storeId);
-        List<MenuVO> menuList = storeMapper.getMenuList(storeId);
+        // 조회수 증가 및 상세 데이터 로드 (Service에서 처리)
+        storeService.plusViewCount(storeId);
+        
+        StoreVO store = storeService.getStoreDetail(storeId);
+        List<MenuVO> menuList = storeService.getMenuList(storeId);
         
         model.addAttribute("store", store);
         model.addAttribute("menuList", menuList);
@@ -66,7 +74,7 @@ public class StoreController {
     public List<String> getTimeSlots(@RequestParam("store_id") int storeId) {
         List<String> slots = new ArrayList<>();
         try {
-            StoreVO store = storeMapper.getStoreDetail(storeId);
+            StoreVO store = storeService.getStoreDetail(storeId);
             if (store == null || store.getOpen_time() == null || store.getClose_time() == null) {
                 return slots;
             }
@@ -86,12 +94,39 @@ public class StoreController {
         return slots; 
     }
     
-    // ================= [가게 정보 관리] =================
+    // ================= [가게 정보 관리 (Owner Only)] =================
+
+    // 0. 내 가게 등록 페이지 이동
+    @GetMapping("/register")
+    public String registerStorePage() {
+        return "store/store_register";
+    }
+
+    // 0. 내 가게 등록 처리
+    @PostMapping("/register")
+    public String registerStoreProcess(@ModelAttribute StoreVO vo, 
+                                     @RequestParam(value="file", required=false) MultipartFile file,
+                                     HttpServletRequest request,
+                                     Principal principal) {
+        if (file != null && !file.isEmpty()) {
+            vo.setStore_img(uploadFile(file, request));
+        }
+        
+        // 서비스에서 user_id 세팅 및 insert 수행
+        storeService.registerStore(vo, principal.getName());
+        return "redirect:/member/mypage";
+    }
 
     // 1. 가게 수정 페이지 이동
     @GetMapping("/update")
-    public String updateStorePage(@RequestParam("store_id") int storeId, Model model) {
-        StoreVO store = storeMapper.getStoreDetail(storeId);
+    public String updateStorePage(@RequestParam("store_id") int storeId, Model model, Principal principal) {
+        // 서비스에서 소유권 검증 후 데이터 반환
+        StoreVO store = storeService.getMyStore(storeId, principal.getName());
+        
+        if (store == null) {
+            return "redirect:/member/mypage"; // 혹은 에러 페이지
+        }
+        
         model.addAttribute("store", store);
         return "store/store_update";
     }
@@ -100,12 +135,14 @@ public class StoreController {
     @PostMapping("/update")
     public String updateStoreProcess(@ModelAttribute StoreVO vo, 
                                      @RequestParam(value="file", required=false) MultipartFile file, 
-                                     HttpServletRequest request) {
+                                     HttpServletRequest request,
+                                     Principal principal) {
         if (file != null && !file.isEmpty()) {
-            String savedName = uploadFile(file, request);
-            vo.setStore_img(savedName);
+            vo.setStore_img(uploadFile(file, request));
         }
-        storeMapper.updateStore(vo);
+        
+        // 서비스에서 소유권 재검증 후 업데이트 수행
+        storeService.modifyStore(vo, principal.getName());
         return "redirect:/member/mypage";
     }
 
@@ -113,7 +150,13 @@ public class StoreController {
 
     // 1. 메뉴 등록 페이지 이동
     @GetMapping("/menu/register")
-    public String menuRegisterPage(@RequestParam("store_id") int storeId, Model model) {
+    public String menuRegisterPage(@RequestParam("store_id") int storeId, Model model, Principal principal) {
+        // 내 가게가 맞는지 확인 (가게 정보 조회 로직 활용)
+        StoreVO store = storeService.getMyStore(storeId, principal.getName());
+        if (store == null) {
+            return "redirect:/member/mypage";
+        }
+        
         model.addAttribute("store_id", storeId);
         return "store/menu_register";
     }
@@ -122,32 +165,36 @@ public class StoreController {
     @PostMapping("/menu/register")
     public String menuRegisterProcess(@ModelAttribute("menuVO") MenuVO menuVO, 
                                       @RequestParam(value="file", required=false) MultipartFile file,
-                                      HttpServletRequest request) {
+                                      HttpServletRequest request,
+                                      Principal principal) {
         
-        System.out.println(">>> 등록 메뉴: " + menuVO.getMenu_name() + ", 가게ID: " + menuVO.getStore_id());
-
         if (file != null && !file.isEmpty()) {
-            String savedName = uploadFile(file, request);
-            menuVO.setMenu_img(savedName);
+            menuVO.setMenu_img(uploadFile(file, request));
         }
         
-        if (menuVO.getMenu_sign() == null) menuVO.setMenu_sign("N");
-        
-        storeMapper.insertMenu(menuVO);
+        // 서비스에서 소유권 확인 후 등록
+        storeService.addMenu(menuVO, principal.getName());
         return "redirect:/member/mypage"; 
     }
 
     // 3. 메뉴 삭제 처리
     @GetMapping("/menu/delete")
-    public String deleteMenu(@RequestParam("menu_id") int menuId) {
-        storeMapper.deleteMenu(menuId);
+    public String deleteMenu(@RequestParam("menu_id") int menuId, Principal principal) {
+        // 서비스에서 메뉴-가게 소유권 연쇄 확인 후 삭제
+        storeService.removeMenu(menuId, principal.getName());
         return "redirect:/member/mypage";
     }
     
     // 4. 메뉴 수정 페이지 이동
     @GetMapping("/menu/update")
-    public String menuUpdatePage(@RequestParam("menu_id") int menuId, Model model) {
-        MenuVO menu = storeMapper.getMenuDetail(menuId);
+    public String menuUpdatePage(@RequestParam("menu_id") int menuId, Model model, Principal principal) {
+        // 서비스에서 소유권 검증 후 메뉴 단건 정보 반환
+        MenuVO menu = storeService.getMenuDetail(menuId, principal.getName());
+        
+        if (menu == null) {
+            return "redirect:/member/mypage";
+        }
+        
         model.addAttribute("menu", menu);
         return "store/menu_update";
     }
@@ -156,15 +203,14 @@ public class StoreController {
     @PostMapping("/menu/update")
     public String menuUpdateProcess(@ModelAttribute("vo") MenuVO vo, 
                                     @RequestParam(value="file", required=false) MultipartFile file,
-                                    HttpServletRequest request) {
+                                    HttpServletRequest request,
+                                    Principal principal) {
         if (file != null && !file.isEmpty()) {
-            String savedName = uploadFile(file, request);
-            vo.setMenu_img(savedName);
+            vo.setMenu_img(uploadFile(file, request));
         }
         
-        if (vo.getMenu_sign() == null) vo.setMenu_sign("N");
-        
-        storeMapper.updateMenu(vo);
+        // 서비스에서 소유권 확인 후 수정
+        storeService.modifyMenu(vo, principal.getName());
         return "redirect:/member/mypage";
     }
 

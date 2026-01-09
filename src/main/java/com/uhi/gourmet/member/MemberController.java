@@ -1,6 +1,7 @@
 package com.uhi.gourmet.member;
 
 import java.security.Principal;
+import java.util.List; // 추가
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
@@ -91,7 +92,7 @@ public class MemberController {
         return "member/signup_owner2";
     }
 
-    @Transactional // [추가] 하나라도 실패하면 가입 전체를 취소함
+    @Transactional
     @PostMapping("/signup/ownerFinal")
     public String ownerFinalProcess(StoreVO storeVo, HttpSession session) {
         MemberVO memberVo = (MemberVO) session.getAttribute("tempMember");
@@ -113,21 +114,27 @@ public class MemberController {
     @GetMapping("/mypage")
     public String mypage(Principal principal, Model model, HttpServletRequest request) {
         String userId = principal.getName();
+        
+        // 1. 회원 기본 정보 로드
         MemberVO member = memberMapper.getMemberById(userId);
         model.addAttribute("member", member);
 
+        // 2. 점주 권한인 경우 (1:1 구조 반영)
         if (request.isUserInRole("ROLE_OWNER")) {
+            // 단건 조회로 변경
             StoreVO store = storeMapper.getStoreByUserId(userId);
+            model.addAttribute("store", store); // 변수명을 'store'로 복구
+            
             if (store != null) {
-                model.addAttribute("store", store);
                 model.addAttribute("menuList", storeMapper.getMenuList(store.getStore_id()));
             }
+            
             return "member/mypage_owner";
         }
+        
         return "member/mypage";
     }
 
-    // [GET] 수정 페이지 이동 - 405 에러 해결
     @GetMapping("/edit")
     public String editPage(Principal principal, Model model) {
         String userId = principal.getName();
@@ -137,7 +144,6 @@ public class MemberController {
         return "member/member_edit"; 
     }
     
-    // [POST] 수정 처리
     @PostMapping("/edit")
     public String updateProcess(MemberVO vo, RedirectAttributes rttr) {
         memberMapper.updateMember(vo);
@@ -147,20 +153,13 @@ public class MemberController {
 
     @PostMapping("/delete")
     public String deleteMember(@RequestParam("user_id") String user_id, HttpSession session, RedirectAttributes rttr) {
-        // 1. DB 데이터 삭제 (이미 잘 되고 계신 부분)
         memberMapper.deleteMember(user_id);
-        
-        // 2. [핵심] Spring Security 인증 정보(SecurityContext) 강제 삭제
-        // 현재 쓰레드에 남아있는 인증 정보를 깨끗이 비웁니다.
         SecurityContextHolder.clearContext();
-        
-        // 3. 기존 세션 무효화
         if (session != null) {
             session.invalidate();
         }
-        
         rttr.addFlashAttribute("msg", "정상적으로 탈퇴되었습니다.");
-        return "redirect:/"; // 메인으로 리다이렉트 시 이제 'isAnonymous' 상태가 됩니다.
+        return "redirect:/";
     }
 
     // ================= [AJAX] =================

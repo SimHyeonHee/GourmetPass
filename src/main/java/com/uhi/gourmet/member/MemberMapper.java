@@ -1,7 +1,8 @@
 package com.uhi.gourmet.member;
 
+import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
-
+@Mapper
 public interface MemberMapper {
 
     // 1. 비밀번호 조회
