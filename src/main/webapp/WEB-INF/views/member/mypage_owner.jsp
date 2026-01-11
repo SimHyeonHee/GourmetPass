@@ -14,18 +14,22 @@
         contextPath: "${pageContext.request.contextPath}",
         csrfName: "${_csrf.parameterName}",
         csrfToken: "${_csrf.token}",
-        // 웹소켓 초기화용 데이터 추가
         userId: "${member.user_id}",
         role: "ROLE_OWNER",
         storeId: "${store.store_id}"
     };
 
-    // 페이지 로드 시 웹소켓 연결 시작
     document.addEventListener("DOMContentLoaded", function() {
         if(typeof initMyPageWebSocket === 'function') {
             initMyPageWebSocket(APP_CONFIG.userId, APP_CONFIG.role, APP_CONFIG.storeId);
         }
     });
+
+    function deleteMenu(menuId) {
+        if(confirm("정말 이 메뉴를 삭제하시겠습니까?")) {
+            location.href = APP_CONFIG.contextPath + "/store/menu/delete?menu_id=" + menuId;
+        }
+    }
 </script>
 <script src="<c:url value='/resources/js/member-mypage.js'/>"></script>
 
@@ -37,7 +41,6 @@
         <c:choose>
             <c:when test="${not empty store}">
                 <div class="owner-grid">
-                    
                     <div class="owner-card" style="width: 35%;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                             <h3 style="margin: 0;">가게 정보</h3>
@@ -126,7 +129,44 @@
                         </table>
                     </div>
                 </div>
+
+                <div class="owner-card" style="margin-top: 30px;">
+                    <h3 style="margin-bottom: 20px;">💬 우리 가게 리뷰 관리</h3>
+                    <div style="max-height: 500px; overflow-y: auto;">
+                        <c:choose>
+                            <c:when test="${not empty store_review_list}">
+                                <c:forEach var="review" items="${store_review_list}">
+                                    <div style="padding: 15px; border: 1px solid #eee; border-radius: 8px; margin-bottom: 15px; background: #fff;">
+                                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                            <div>
+                                                <strong style="font-size: 16px;">${review.user_nm} 고객님</strong>
+                                                <span style="color: #f1c40f; margin-left: 10px;">
+                                                    <c:forEach begin="1" end="${review.rating}">⭐</c:forEach>
+                                                </span>
+                                            </div>
+                                            <span style="color: #999; font-size: 13px;">
+                                                <fmt:formatDate value="${review.review_date}" pattern="yyyy-MM-dd HH:mm" />
+                                            </span>
+                                        </div>
+                                        <div style="display: flex; gap: 15px;">
+                                            <c:if test="${not empty review.img_url}">
+                                                <img src="<c:url value='/upload/${review.img_url}'/>" style="width: 100px; height: 100px; object-fit: cover; border-radius: 5px;">
+                                            </c:if>
+                                            <div style="flex: 1;">
+                                                <p style="margin: 0; line-height: 1.5; color: #444;">${review.content}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </c:forEach>
+                            </c:when>
+                            <c:otherwise>
+                                <div style="padding: 40px; text-align: center; color: #999;">아직 등록된 리뷰가 없습니다.</div>
+                            </c:otherwise>
+                        </c:choose>
+                    </div>
+                </div>
             </c:when>
+            
             <c:otherwise>
                 <div style="padding: 120px; text-align: center; border: 2px dashed #ccc; background: #fafafa; border-radius: 15px; margin-top: 30px;">
                     <h3 style="color: #666;">연결된 매장 정보가 없습니다.</h3>

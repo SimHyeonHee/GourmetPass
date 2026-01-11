@@ -4,6 +4,7 @@ import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map; 
 import java.io.File;
 import java.io.IOException;
 import java.security.Principal;
@@ -23,6 +24,8 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.uhi.gourmet.wait.WaitService;
+import com.uhi.gourmet.review.ReviewService; 
+import com.uhi.gourmet.review.ReviewVO;      
 
 @Controller
 @RequestMapping("/store")
@@ -33,6 +36,9 @@ public class StoreController {
 
     @Autowired
     private WaitService waitService;
+
+    @Autowired
+    private ReviewService reviewService; 
 
     @Value("${kakao.js.key}")
     private String kakaoJsKey;
@@ -54,21 +60,38 @@ public class StoreController {
         return "store/store_list";
     }
 
-    // 2. 맛집 상세 정보 조회
+    // 2. 맛집 상세 정보 조회 (리뷰 통계, 목록 및 작성 권한 체크 추가)
     @GetMapping("/detail")
-    public String storeDetail(@RequestParam("storeId") int storeId, Model model) {
+    public String storeDetail(@RequestParam("storeId") int storeId, Model model, Principal principal) {
         storeService.plusViewCount(storeId);
         
         StoreVO store = storeService.getStoreDetail(storeId);
         List<MenuVO> menuList = storeService.getMenuList(storeId);
         
+        // 실시간 현재 대기 팀수 조회
         int currentWaitCount = waitService.get_current_wait_count(storeId);
         model.addAttribute("currentWaitCount", currentWaitCount);
 
-        if (store != null) {
+        // 리뷰 통계(평균 별점, 총 리뷰 수) 조회 및 세팅
+        Map<String, Object> stats = reviewService.getReviewStats(storeId);
+        if (store != null && stats != null) {
+            store.setReview_count(Integer.parseInt(String.valueOf(stats.get("review_count"))));
+            store.setAvg_rating(Double.parseDouble(String.valueOf(stats.get("avg_rating"))));
+            
             List<String> timeSlots = generateTimeSlots(store);
             model.addAttribute("timeSlots", timeSlots);
         }
+
+        // 해당 가게의 리뷰 리스트 조회
+        List<ReviewVO> reviewList = reviewService.getStoreReviews(storeId);
+        model.addAttribute("reviewList", reviewList);
+
+        // [추가] 리뷰 작성 권한 체크 (로그인 상태일 때만 체크)
+        boolean canWriteReview = false;
+        if (principal != null) {
+            canWriteReview = reviewService.checkReviewEligibility(principal.getName(), storeId);
+        }
+        model.addAttribute("canWriteReview", canWriteReview);
 
         model.addAttribute("store", store);
         model.addAttribute("menuList", menuList);

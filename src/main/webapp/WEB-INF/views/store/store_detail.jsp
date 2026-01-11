@@ -8,7 +8,13 @@
 <link rel="stylesheet" href="<c:url value='/resources/css/store-detail.css'/>">
 
 <div style="width: 80%; margin: 0 auto; padding: 20px 0;">
-    <h1 style="text-align: left;">🏠 ${store.store_name} <small style="font-size:15px; color:gray;">(${store.store_category})</small></h1>
+    <h1 style="text-align: left;">
+        🏠 ${store.store_name} 
+        <small style="font-size:15px; color:gray;">(${store.store_category})</small>
+        <span style="font-size: 18px; color: #f1c40f; margin-left: 10px;">
+            ⭐ ${store.avg_rating} <small style="color: #666;">(${store.review_count}개의 리뷰)</small>
+        </span>
+    </h1>
     
     <table border="0" cellpadding="10" cellspacing="0" width="100%" style="border: 1px solid #ddd; border-radius: 12px; overflow: hidden; background: #fff;">
         <tr>
@@ -147,10 +153,83 @@
                     <select name="people_cnt" class="form-input">
                         <c:forEach var="i" begin="1" end="10"><option value="${i}">${i}명</option></c:forEach>
                     </select>
-                    <button type="submit" class="btn-confirm-waiting">줄서기 신청</button>
+                    <button type="submit" class="btn-confirm-waiting" style="margin-top:20px;">줄서기 신청</button>
                 </div>
             </form>
         </sec:authorize>
+    </div>
+
+    <hr style="margin: 50px 0; border: 0; border-top: 2px solid #333;">
+
+    <div id="review-section" style="text-align: left;">
+        <h3>💬 리뷰 (${store.review_count})</h3>
+
+        <sec:authorize access="isAuthenticated()">
+            <c:choose>
+                <c:when test="${canWriteReview}">
+                    <div style="background: #f9f9f9; padding: 20px; border-radius: 10px; border: 1px solid #eee; margin-bottom: 30px;">
+                        <form action="${pageContext.request.contextPath}/review/write" method="post" enctype="multipart/form-data">
+                            <input type="hidden" name="store_id" value="${store.store_id}">
+                            <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}" />
+                            
+                            <div style="margin-bottom: 10px;">
+                                <label>별점: </label>
+                                <select name="rating" style="padding: 5px;">
+                                    <option value="5">⭐⭐⭐⭐⭐ (5점)</option>
+                                    <option value="4">⭐⭐⭐⭐ (4점)</option>
+                                    <option value="3">⭐⭐⭐ (3점)</option>
+                                    <option value="2">⭐⭐ (2점)</option>
+                                    <option value="1">⭐ (1점)</option>
+                                </select>
+                            </div>
+                            <textarea name="content" placeholder="맛있는 경험을 공유해주세요!" required 
+                                      style="width: 100%; height: 80px; padding: 10px; border: 1px solid #ddd; border-radius: 5px; resize: none;"></textarea>
+                            <div style="margin-top: 10px; display: flex; justify-content: space-between; align-items: center;">
+                                <input type="file" name="file">
+                                <button type="submit" style="padding: 8px 25px; background: #333; color: white; border: none; border-radius: 5px; cursor: pointer;">리뷰 등록</button>
+                            </div>
+                        </form>
+                    </div>
+                </c:when>
+                <c:otherwise>
+                    <div style="background: #fff8e1; padding: 20px; border-radius: 10px; border: 1px solid #ffe082; margin-bottom: 30px; text-align: center; color: #795548;">
+                        📢 <strong>방문 완료 후 리뷰를 작성하실 수 있습니다.</strong><br>
+                        <small>예약 또는 웨이팅을 이용하고 맛있는 경험을 나눠주세요!</small>
+                    </div>
+                </c:otherwise>
+            </c:choose>
+        </sec:authorize>
+
+        <sec:authorize access="isAnonymous()">
+            <div style="background: #f5f5f5; padding: 20px; border-radius: 10px; border: 1px solid #eee; margin-bottom: 30px; text-align: center; color: #666;">
+                리뷰 작성을 위해 <a href="${pageContext.request.contextPath}/member/login" style="color: #333; font-weight: bold;">로그인</a>이 필요합니다.
+            </div>
+        </sec:authorize>
+
+        <div class="review-list">
+            <c:choose>
+                <c:when test="${not empty reviewList}">
+                    <c:forEach var="review" items="${reviewList}">
+                        <div style="padding: 20px 0; border-bottom: 1px solid #eee;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                <strong>${review.user_nm}</strong>
+                                <span style="color: #999; font-size: 13px;"><fmt:formatDate value="${review.review_date}" pattern="yyyy-MM-dd" /></span>
+                            </div>
+                            <div style="color: #f1c40f; margin-bottom: 10px;">
+                                <c:forEach begin="1" end="${review.rating}">⭐</c:forEach>
+                            </div>
+                            <p style="margin: 10px 0; line-height: 1.6;">${review.content}</p>
+                            <c:if test="${not empty review.img_url}">
+                                <img src="<c:url value='/upload/${review.img_url}'/>" width="120" style="border-radius: 5px; margin-top: 10px;">
+                            </c:if>
+                        </div>
+                    </c:forEach>
+                </c:when>
+                <c:otherwise>
+                    <div style="text-align: center; padding: 40px; color: #999;">아직 작성된 리뷰가 없습니다. 첫 리뷰를 남겨보세요!</div>
+                </c:otherwise>
+            </c:choose>
+        </div>
     </div>
 
     <div style="margin: 50px 0; text-align: center;">
@@ -161,16 +240,34 @@
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="//dapi.kakao.com/v2/maps/sdk.js?appkey=${kakaoJsKey}"></script>
 <script>
+    // 1. 기초 설정 정보
     const STORE_CONF = {
         lat: "${store.store_lat}",
         lng: "${store.store_lon}",
+        storeName: "${store.store_name}",
         openTime: "${store.open_time}",
         closeTime: "${store.close_time}",
         resUnit: "${store.res_unit}",
         contextPath: "${pageContext.request.contextPath}"
     };
-    
-    // 메뉴 토글 함수
+
+    // 2. 지도 초기화
+    $(document).ready(function() {
+        if (STORE_CONF.lat && STORE_CONF.lng) {
+            const container = document.getElementById('map');
+            const options = {
+                center: new kakao.maps.LatLng(STORE_CONF.lat, STORE_CONF.lng),
+                level: 3
+            };
+            const map = new kakao.maps.Map(container, options);
+            const marker = new kakao.maps.Marker({
+                position: new kakao.maps.LatLng(STORE_CONF.lat, STORE_CONF.lng)
+            });
+            marker.setMap(map);
+        }
+    });
+
+    // 3. UI 인터랙션 함수들
     function toggleMenus() {
         const area = document.getElementById('other-menu-area');
         const btn = document.getElementById('menu-toggle-btn');
@@ -183,14 +280,14 @@
         }
     }
 
-    // 전송 전 데이터 디버깅을 위한 스크립트
-    $('#bookForm').on('submit', function() {
-        console.log("전송 데이터 확인:");
-        console.log("store_id:", $("input[name='store_id']").val());
-        console.log("book_date:", $("input[name='book_date']").val());
-        console.log("book_time:", $("#selectedTime").val());
-        return true; 
-    });
+    function showInteraction(type) {
+        $(".interaction-area").hide();
+        $("#" + type + "-area").fadeIn();
+        window.scrollTo({
+            top: $("#" + type + "-area").offset().top - 100,
+            behavior: 'smooth'
+        });
+    }
 </script>
 <script src="<c:url value='/resources/js/store-detail.js'/>"></script>
 

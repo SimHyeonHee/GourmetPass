@@ -20,8 +20,12 @@ public class StoreVO {
     private String store_desc;      // 설명 (CLOB)
     private String store_img;       // 이미지 경로
     
-    // 예약 시간 설정용 필드 (260105 수정사항 반영)
+    // 예약 시간 설정용 필드
     private String open_time;       // 예: "09:00"
     private String close_time;      // 예: "22:00"
     private int res_unit;           // 예약 단위 (분)
+
+    // [추가] 리뷰 통계 정보 (가게 상세페이지용)
+    private double avg_rating;      // 평균 별점
+    private int review_count;       // 총 리뷰 수
 }
