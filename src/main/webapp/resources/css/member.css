@@ -174,5 +174,29 @@ input[readonly] {
 .edit-table td { width: 75%; padding: 15px 10px; border-bottom: 1px solid #eee; }
 .edit-input[readonly] { background-color: #f9f9f9; cursor: not-allowed; color: #999; }
 
+/* =========================================
+   7. 가입 유형 선택 (signup_select) 전용
+   ========================================= */
+.select-wrapper { width: 80%; margin: 60px auto; text-align: center; font-family: sans-serif; }
+.select-group { display: flex; justify-content: center; gap: 30px; margin-top: 40px; flex-wrap: wrap; }
+
+.select-card {
+    flex: 0 0 280px; padding: 45px 20px; text-decoration: none; color: #333;
+    border: 2px solid #333; border-radius: 15px; background: #fff;
+    transition: 0.2s; display: block; box-sizing: border-box;
+}
+
+/* v1.0.4 표준 호버 액션: 위로 이동 및 강한 그림자 */
+.select-card:hover { 
+    transform: translateY(-8px); 
+    box-shadow: 8px 8px 0px #333; 
+    border-color: #333;
+    background-color: #fff;
+}
+
+.select-icon { font-size: 60px; margin-bottom: 25px; display: block; }
+.select-title { font-size: 22px; font-weight: bold; margin-bottom: 15px; display: block; }
+.select-desc { font-size: 15px; color: #666; line-height: 1.6; display: block; }
+
 /* 회원 탈퇴 섹션 */
 .withdraw-section { margin-top: 60px; padding-top: 25px; border-top: 2px dashed #eee; text-align: right; }

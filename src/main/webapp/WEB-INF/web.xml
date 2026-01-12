@@ -5,20 +5,12 @@
 
 	<context-param>
 		<param-name>contextConfigLocation</param-name>
-		<param-value>/WEB-INF/spring/root-context.xml</param-value>
-	</context-param>
-
-	<!-- Spring Security를 위해 만든 security_context.xml을 인식시키는 코드 -->
-	<context-param>
-		<param-name>contextConfigLocation</param-name>
 		<param-value>
 			/WEB-INF/spring/root-context.xml
 			/WEB-INF/spring/security-context.xml
 		</param-value>
 	</context-param>
-	<welcome-file-list>
-		<welcome-file></welcome-file>
-	</welcome-file-list>
+
 	<listener>
 		<listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
 	</listener>
@@ -53,8 +45,8 @@
 	<filter-mapping>
 		<filter-name>encodingFilter</filter-name>
 		<url-pattern>/*</url-pattern>
-
 	</filter-mapping>
+
 	<filter>
 		<filter-name>springSecurityFilterChain</filter-name>
 		<filter-class>org.springframework.web.filter.DelegatingFilterProxy</filter-class>
