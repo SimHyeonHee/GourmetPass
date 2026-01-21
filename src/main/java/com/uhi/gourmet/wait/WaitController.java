@@ -1,9 +1,7 @@
+/* com/uhi/gourmet/wait/WaitController.java */
 package com.uhi.gourmet.wait;
 
 import java.security.Principal;
-import java.util.List;
-import java.util.stream.Collectors;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
@@ -13,9 +11,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import com.uhi.gourmet.book.BookService;
-import com.uhi.gourmet.book.BookVO;
-
 @Controller
 @RequestMapping("/wait")
 public class WaitController {
@@ -24,17 +19,12 @@ public class WaitController {
     private WaitService wait_service;
 
     @Autowired
-    private BookService book_service; // [추가] 예약 내역 조회를 위해 주입
-
-    @Autowired
     private SimpMessagingTemplate messaging_template;
 
     /**
-     * 일반 회원: 내 이용현황 페이지 조회
-     * - 현재 진행 중인 예약/웨이팅 '만' 상단에 노출
-     * - 하단에 전체 내역으로 가는 버튼 제공
+     * [1] 나의 실시간 이용 현황 페이지 조회
      */
-    @GetMapping("/myStatus")
+    @GetMapping("/status")
     public String my_status(Principal principal, Model model) {
         if (principal == null) {
             return "redirect:/member/login";
@@ -42,69 +32,78 @@ public class WaitController {
         
         String user_id = principal.getName();
         
-        // 1. 모든 내역 가져오기
-        List<WaitVO> my_wait_list = wait_service.get_my_wait_list(user_id);
-        List<BookVO> my_book_list = book_service.get_my_book_list(user_id);
+        // 서비스 계층에서 가공된 모든 상태 데이터를 한 번에 모델에 추가
+        model.addAllAttributes(wait_service.getMyStatusSummary(user_id));
         
-        // 2. 진행 중인 내역 필터링 (웨이팅: WAITING, CALLED / 예약: RESERVED)
-        // 가장 최근의 진행 중인 건 1건만 별도로 전달
-        WaitVO activeWait = my_wait_list.stream()
-                .filter(w -> "WAITING".equals(w.getWait_status()) || "CALLED".equals(w.getWait_status()))
-                .findFirst().orElse(null);
-        
-        BookVO activeBook = my_book_list.stream()
-                .filter(b -> "RESERVED".equals(b.getBook_status()))
-                .findFirst().orElse(null);
-
-        // 3. 리뷰 작성이 가능한 최근 완료 내역 (FINISH) 추출
-        List<WaitVO> finishedWaits = my_wait_list.stream()
-                .filter(w -> "FINISH".equals(w.getWait_status()))
-                .collect(Collectors.toList());
-        
-        List<BookVO> finishedBooks = my_book_list.stream()
-                .filter(b -> "FINISH".equals(b.getBook_status()))
-                .collect(Collectors.toList());
-
-        // 모델에 데이터 담기
-        model.addAttribute("activeWait", activeWait);
-        model.addAttribute("activeBook", activeBook);
-        model.addAttribute("finishedWaits", finishedWaits);
-        model.addAttribute("finishedBooks", finishedBooks);
-        
-        // 전체 내역 보기를 위한 원본 리스트도 유지
-        model.addAttribute("my_wait_list", my_wait_list);
-        model.addAttribute("my_book_list", my_book_list);
-        
-        return "wait/myStatus";
+        return "wait/wait_status";
     }
 
+    /**
+     * [2] 웨이팅 등록
+     */
     @PostMapping("/register")
     public String register_wait(WaitVO vo, Principal principal) {
         if (principal == null) {
             return "redirect:/member/login";
         }
+        
         vo.setUser_id(principal.getName());
         wait_service.register_wait(vo);
-        messaging_template.convertAndSend("/topic/store/" + vo.getStore_id(), "새로운 웨이팅이 접수되었습니다! 번호: " + vo.getWait_num());
         
-        // 등록 후 바로 이용현황 페이지로 이동하여 내 상태를 확인하게 함
-        return "redirect:/wait/myStatus";
+        // 점주에게 실시간 알림 전송 (새로운 웨이팅 발생)
+        messaging_template.convertAndSend("/topic/store/" + vo.getStore_id(), 
+            "새로운 웨이팅이 접수되었습니다! 번호: " + vo.getWait_num());
+            
+        // [추가] 대기열에 변화가 생겼으므로 해당 가게의 모든 대기자 화면 갱신 신호 발송
+        messaging_template.convertAndSend("/topic/store/" + vo.getStore_id() + "/waitUpdate", "REFRESH");
+        
+        return "redirect:/wait/status";
     }
 
+    /**
+     * [핵심 리팩토링] [3] 상태 업데이트 (점주 호출/입장/취소)
+     * 해결: 누군가 입장하면 대기 중인 '모든' 사용자의 대기 팀 수가 즉시 줄어들도록 전체 신호를 보냅니다.
+     */
     @PostMapping("/updateStatus")
     public String update_status(@RequestParam("wait_id") int wait_id, 
                                 @RequestParam(value="user_id", required=false) String user_id,
                                 @RequestParam("status") String status) {
+        
+        // 1. 상태 업데이트 전, 해당 웨이팅 정보를 조회하여 어느 가게(store_id)인지 파악합니다.
+        WaitVO wait = wait_service.get_wait_detail(wait_id); 
+        
+        // 2. 실제 DB 상태 업데이트 수행
         wait_service.update_wait_status(wait_id, status);
-        if ("CALLED".equals(status) && user_id != null) {
-            messaging_template.convertAndSend("/topic/wait/" + user_id, "입장하실 순서입니다! 매장으로 방문해주세요.");
+        
+        if (wait != null) {
+            int store_id = wait.getStore_id();
+
+            // 3. [개별 알림] 호출(CALLED) 시 해당 유저 한 명에게만 "입장하세요" 신호 (기존)
+            if ("CALLED".equals(status) && user_id != null) {
+                messaging_template.convertAndSend("/topic/wait/" + user_id, status);
+            }
+            
+            // 4. [전체 방송] 상태가 'ING'(식사중)이나 'CANCELLED'로 변했다면 대기 팀 수가 변한 것이므로
+            // 해당 가게 채널(/topic/store/{id}/waitUpdate)을 구독 중인 모든 유저에게 새로고침 신호 전송
+            messaging_template.convertAndSend("/topic/store/" + store_id + "/waitUpdate", "REFRESH");
         }
+        
         return "redirect:/book/manage";
     }
 
+    /**
+     * [4] 웨이팅 취소
+     */
     @PostMapping("/cancel")
     public String cancel_wait(@RequestParam("wait_id") int wait_id) {
+        WaitVO wait = wait_service.get_wait_detail(wait_id);
         wait_service.update_wait_status(wait_id, "CANCELLED");
-        return "redirect:/wait/myStatus";
+        
+        if (wait != null) {
+            // 내가 취소해도 다른 사람들의 대기 팀 수가 줄어들어야 하므로 전체 신호 발송
+            messaging_template.convertAndSend("/topic/store/" + wait.getStore_id() + "/waitUpdate", "REFRESH");
+        }
+        
+        return "redirect:/wait/status";
     }
 }

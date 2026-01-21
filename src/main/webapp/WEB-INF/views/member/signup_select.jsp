@@ -1,15 +1,13 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
 
-<%-- [1] 공통 헤더 삽입 (APP_CONFIG 및 기본 레이아웃 포함) --%>
 <jsp:include page="../common/header.jsp" />
 
-<%-- [2] 관심사 분리: 통합된 회원 스타일시트 연결 --%>
 <link rel="stylesheet" href="<c:url value='/resources/css/member.css'/>">
 
 <div class="select-wrapper">
-    <h2 style="font-size: 28px; font-weight: 900;">회원가입 유형을 선택해주세요</h2>
-    <p style="color: #888;">어떤 목적으로 Gourmet Pass를 이용하시나요?</p>
+    <h2 class="select-header">회원가입 유형을 선택해주세요</h2>
+    <p class="select-subtext">어떤 목적으로 Gourmet Pass를 이용하시나요?</p>
     
     <div class="select-group">
         <%-- 일반 회원 선택 카드 --%>
@@ -34,5 +32,4 @@
     </div>
 </div>
 
-<%-- [3] 공통 푸터 삽입 (하단 메뉴바 포함) --%>
 <jsp:include page="../common/footer.jsp" />

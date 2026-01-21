@@ -16,7 +16,7 @@
                 <span class="foot-label">검색</span>
             </a>
             
-            <%-- 이용현황 섹션: 권한에 따른 경로 분기 --%>
+            <%-- 이용현황 섹션: 경로를 /member/wait_status로 통일 --%>
             <sec:authorize access="isAnonymous()">
                 <a href="<c:url value='/member/login'/>" class="foot-btn">
                     <span class="foot-icon">📅</span>
@@ -26,7 +26,7 @@
             
             <sec:authorize access="isAuthenticated()">
                 <sec:authorize access="hasRole('ROLE_USER')">
-                    <a href="<c:url value='/wait/myStatus'/>" class="foot-btn">
+                    <a href="<c:url value='/member/wait_status'/>" class="foot-btn">
                         <span class="foot-icon">📅</span>
                         <span class="foot-label">이용현황</span>
                     </a>
@@ -63,4 +63,4 @@
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
-</html>-
+</html>

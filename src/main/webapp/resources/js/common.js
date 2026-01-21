@@ -1,8 +1,7 @@
-/* /resources/js/common.js */
+/* src/main/webapp/resources/js/common.js */
 
 /**
- * 전화번호 자동 하이픈 (02 지역번호 대응)
- * 사용법: <input oninput="autoHyphen(this)">
+ * 전화번호 자동 하이픈 (제공하신 로직 그대로 유지)
  */
 const autoHyphen = (target) => {
     let val = target.value.replace(/[^0-9]/g, "");
@@ -21,3 +20,15 @@ const autoHyphen = (target) => {
     }
     target.value = str;
 };
+
+/**
+ * [원칙 1] JSP 내 onclick 이벤트를 대체하기 위한 공통 클릭 핸들러
+ */
+$(document).ready(function() {
+    $(".clickable").on("click", function() {
+        var url = $(this).data("url");
+        if(url) {
+            location.href = APP_CONFIG.contextPath + url;
+        }
+    });
+});

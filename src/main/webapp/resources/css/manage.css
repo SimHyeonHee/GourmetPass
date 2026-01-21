@@ -1,0 +1,104 @@
+@charset "UTF-8";
+
+/**
+ * 고메패스 매장 관리 센터 전용 스타일
+ * Bold Wire 표준: 2px 실선, 15px 곡률, 8px 입체 그림자
+ */
+
+/* 1. 대시보드 공통 카드 */
+.dashboard-card {
+    padding: 35px;
+    background: #fff;
+    border: 2px solid #333;
+    border-radius: 15px;
+    box-shadow: 8px 8px 0px #333;
+    margin-bottom: 50px;
+}
+
+.card-header-flex {
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    margin-bottom: 25px;
+}
+
+.card-title-wait { color: #ff3d00; margin: 0; font-weight: 900; }
+.card-title-book { color: #2f855a; margin: 0; font-weight: 900; }
+
+/* 2. 관리 테이블 레이아웃 */
+.manage-dashboard-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 12px;
+    table-layout: fixed;
+}
+
+.manage-dashboard-table th {
+    padding: 15px 10px;
+    background: #f8f9fa;
+    border-bottom: 2px solid #333;
+    font-weight: 800;
+    text-align: center;
+    font-size: 14px;
+}
+
+.manage-dashboard-table td {
+    padding: 20px 10px;
+    background: #fff;
+    border-top: 2px solid #333;
+    border-bottom: 2px solid #333;
+    vertical-align: middle;
+    font-size: 15px;
+}
+
+/* 테이블 양 끝 곡률 처리 */
+.manage-dashboard-table td:first-child { border-left: 2px solid #333; border-radius: 12px 0 0 12px; }
+.manage-dashboard-table td:last-child { border-right: 2px solid #333; border-radius: 0 12px 12px 0; }
+
+/* 열 너비 고정 */
+.col-num { width: 80px; }
+.col-userid { width: auto; } 
+.col-people { width: 90px; }
+.col-status { width: 110px; }
+.col-action { width: 320px; }
+
+/* 3. 상태 배지 커스텀 */
+.badge-called { background: #ff3d00; color: #fff; border-color: #ff3d00; }
+.badge-ing { background: #2e7d32; color: #fff; border-color: #2e7d32; }
+
+/* 4. 버튼 시스템 */
+.action-btn-group {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: nowrap;
+}
+
+.btn-step {
+    height: 38px;
+    padding: 0 15px;
+    font-weight: 900;
+    border: 2px solid #333;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: 0.2s;
+    font-size: 13px;
+    white-space: nowrap;
+}
+
+.btn-step-primary { background: #333; color: #fff; }
+.btn-step-next { background: #2e7d32; color: #fff; border-color: #2e7d32; }
+.btn-step-danger { background: #fff; color: #dc3545; border-color: #dc3545; font-size: 11px; }
+.btn-finish { background: #aaa; color: #fff; border-color: #aaa; }
+
+.btn-step:hover { 
+    transform: translateY(-2px); 
+    box-shadow: 3px 3px 0px #333; 
+}
+
+.management-end {
+    color: #ccc; 
+    font-size: 12px; 
+    font-weight: 800;
+}

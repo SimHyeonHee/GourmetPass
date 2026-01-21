@@ -128,4 +128,13 @@
         SELECT * FROM MENU WHERE menu_id = #{menu_id}
     </select>
 
+    <select id="getBookedTimes" resultType="string">
+        SELECT TO_CHAR(book_date, 'HH24:MI')
+        FROM BOOK
+        WHERE store_id = #{store_id}
+          AND TO_CHAR(book_date, 'YYYY-MM-DD') = #{book_date}
+        AND book_status NOT IN ('CANCELED', 'NOSHOW')
+    </select>
+    
+   
 </mapper>

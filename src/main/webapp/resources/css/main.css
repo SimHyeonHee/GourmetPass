@@ -1,64 +1,119 @@
-/* /resources/css/main.css */
-.main-wrapper { width: 80%; margin: 40px auto; font-family: sans-serif; }
+/* src/main/webapp/resources/css/main.css */
+@charset "UTF-8";
 
-/* 1. 검색 섹션: 2px/15px 통일 */
+.main-wrapper { 
+    width: 90%; 
+    max-width: 1200px; 
+    margin: 40px auto; 
+}
+
+/* 1. 검색 섹션: Bold Wire 표준 카드 적용 */
 .search-card { 
     border: 2px solid #333; 
     border-radius: 15px; 
-    padding: 50px 30px; 
+    padding: 60px 30px; 
     background: #fff; 
     text-align: center; 
-    margin-bottom: 40px; 
+    margin-bottom: 50px;
+    box-shadow: 8px 8px 0px #333; /* 고메패스 표준 입체 그림자 */
 }
-.search-title { font-size: 28px; font-weight: bold; margin-bottom: 25px; }
-.search-form { display: flex; justify-content: center; gap: 10px; }
+
+.search-title { 
+    font-size: 32px; 
+    font-weight: 900; 
+    margin-bottom: 30px; 
+    letter-spacing: -1px; 
+}
+
+.search-form { 
+    display: flex; 
+    justify-content: center; 
+    gap: 12px; 
+}
+
 .search-input { 
     width: 60%; 
     max-width: 500px; 
-    padding: 15px; 
+    height: 55px;
+    padding: 0 20px; 
     border: 2px solid #333; 
     border-radius: 10px; 
     font-size: 16px; 
     outline: none; 
 }
+
 .btn-search { 
-    padding: 0 30px; 
+    padding: 0 35px; 
     background: #333; 
     color: #fff; 
-    border: 2px solid #333; 
+    border: none; 
     border-radius: 10px; 
-    font-weight: bold; 
-    cursor: pointer; 
+    font-weight: 900; 
+    cursor: pointer;
+    transition: 0.2s;
 }
 
-/* 2. 카테고리 그리드 */
-.category-container { 
-    display: grid; 
-    grid-template-columns: repeat(6, 1fr); 
-    gap: 12px; 
-    margin-bottom: 50px; 
+.btn-search:hover { 
+    background: #000; 
+    transform: translateY(-2px); 
 }
-.btn-category { 
-    padding: 15px 0; 
-    border: 2px solid #333; 
-    border-radius: 12px; 
-    background: #fff; 
-    font-weight: bold; 
-    cursor: pointer; 
+
+/* 2. 카테고리 섹션: 칩(Chip) 디자인 적용 */
+.category-section { 
+    margin-bottom: 60px; 
     text-align: center; 
+}
+
+.chip-group { 
+    display: flex; 
+    justify-content: center; 
+    gap: 12px; 
+    flex-wrap: wrap; 
+}
+
+.cat-chip { 
+    padding: 12px 25px; 
+    border: 2px solid #333; 
+    border-radius: 30px; 
+    background: #fff; 
+    cursor: pointer; 
+    font-size: 16px; 
+    font-weight: 800; 
     transition: 0.2s; 
 }
-.btn-category:hover { background: #f8f8f8; transform: translateY(-2px); }
-.btn-all { background: #eee !important; }
+
+.cat-chip:hover { 
+    transform: translateY(-3px); 
+    box-shadow: 4px 4px 0px #333; 
+}
+
+.cat-chip.btn-all { 
+    background: #f0f0f0; 
+}
+
+/* 섹션 구분선 */
+.main-divider {
+    border: 0;
+    border-top: 1px solid #eee;
+    margin: 60px 0;
+}
 
 /* 3. 인기 맛집 섹션 */
-.section-divider { border: 0; border-top: 1px solid #eee; margin: 50px 0; }
-.section-title { text-align: left; font-size: 22px; font-weight: bold; margin-bottom: 25px; }
+.popular-section { 
+    margin-top: 60px; 
+}
+
+.section-title { 
+    font-size: 24px; 
+    font-weight: 900; 
+    margin-bottom: 30px; 
+    text-align: left; 
+}
 
 .store-grid { 
     display: grid; 
     grid-template-columns: repeat(3, 1fr); 
-    gap: 25px; 
+    gap: 30px; 
 }
 
 .store-card { 
@@ -67,66 +122,109 @@
     overflow: hidden; 
     background: #fff; 
     cursor: pointer; 
-    transition: 0.2s; 
-    text-align: left; 
+    transition: 0.3s; 
     display: flex;
     flex-direction: column;
 }
-.store-card:hover { transform: translateY(-5px); box-shadow: 5px 5px 0px #333; }
+
+.store-card:hover { 
+    transform: translateY(-8px); 
+    box-shadow: 10px 10px 0px #333; 
+}
 
 .store-img-box { 
     width: 100%; 
-    height: 180px; 
-    background: #eee; 
+    height: 220px; 
+    background: #f9f9f9; 
     display: flex; 
     align-items: center; 
     justify-content: center; 
     border-bottom: 2px solid #333; 
 }
-.store-img-box img { width: 100%; height: 100%; object-fit: cover; }
-.no-img-text { color: #ccc; font-size: 14px; }
 
-.store-info { padding: 20px; flex-grow: 1; }
-.store-cat { font-size: 12px; color: #888; margin-bottom: 5px; text-transform: uppercase; }
-.store-name-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-.store-name { font-size: 18px; font-weight: bold; margin: 0; }
-.hot-badge { background: #ff3d00; color: #fff; font-size: 10px; padding: 2px 6px; border-radius: 4px; }
-.store-addr { font-size: 13px; color: #666; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.store-img-box img { 
+    width: 100%; 
+    height: 100%; 
+    object-fit: cover; 
+}
 
-/* [v1.0.4 수정] 별점 및 조회수 통계 영역 스타일 보강 */
-.store-stats { 
-    margin-top: 15px; 
+.no-img-text {
+    color: #ccc;
+    font-weight: 900;
+}
+
+.store-info { 
+    padding: 25px; 
+    flex-grow: 1; 
+}
+
+.store-cat { 
     font-size: 13px; 
+    color: #888; 
+    font-weight: 800; 
+    margin-bottom: 10px; 
+}
+
+.store-name-row { 
     display: flex; 
     justify-content: space-between; 
     align-items: center; 
-}
-.stat-rating { color: #ff3d00; font-weight: bold; }
-.stat-views { color: #888; font-weight: normal; font-size: 12px; }
-
-.empty-msg { grid-column: span 3; padding: 80px; text-align: center; color: #999; border: 2px solid #333; border-radius: 15px; }
-
-/* ============================================================
-   반응형 대응: 카테고리와 맛집 카드의 정렬 동기화 및 세로 스택
-   ============================================================ */
-
-@media (max-width: 1100px) {
-    .category-container { grid-template-columns: repeat(4, 1fr); }
-    .store-grid { grid-template-columns: repeat(2, 1fr); }
-    .empty-msg { grid-column: span 2; }
+    margin-bottom: 12px; 
 }
 
-@media (max-width: 850px) {
-    .main-wrapper { width: 90%; }
-    .category-container { grid-template-columns: repeat(2, 1fr); }
-    .store-grid { grid-template-columns: 1fr; }
-    .empty-msg { grid-column: span 1; }
-    .store-img-box { height: 250px; } 
+.store-name { 
+    font-size: 20px; 
+    font-weight: 900; 
+    margin: 0; 
 }
 
-@media (max-width: 500px) {
-    .search-form { flex-direction: column; }
-    .search-input { width: 100%; max-width: none; }
-    .category-container { grid-template-columns: 1fr; }
-    .btn-category { padding: 12px 0; }
+.hot-badge { 
+    background: #ff3d00; 
+    color: #fff; 
+    font-size: 11px; 
+    padding: 3px 8px; 
+    border-radius: 5px; 
+    font-weight: 900; 
+}
+
+.store-addr-text {
+    color: #666;
+    font-size: 14px;
+    margin-bottom: 15px;
+}
+
+.store-stats { 
+    margin-top: 15px; 
+    padding-top: 15px;
+    border-top: 1px dashed #ddd;
+    font-size: 14px; 
+    font-weight: 800;
+    display: flex; 
+    justify-content: space-between; 
+}
+
+.stat-rating { 
+    color: #ff3d00; 
+}
+
+.stat-views { 
+    color: #999; 
+}
+
+/* 데이터가 없을 때 표시되는 상자 */
+.empty-status-box {
+    padding: 100px;
+    text-align: center;
+    border: 2px dashed #ccc;
+    border-radius: 15px;
+    color: #999;
+}
+
+/* 반응형 설정 */
+@media (max-width: 1024px) { 
+    .store-grid { grid-template-columns: repeat(2, 1fr); } 
+}
+
+@media (max-width: 700px) { 
+    .store-grid { grid-template-columns: 1fr; } 
 }

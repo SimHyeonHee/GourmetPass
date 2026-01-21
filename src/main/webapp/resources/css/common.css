@@ -1,37 +1,43 @@
-/* /resources/css/common.css */
+/* src/main/webapp/resources/css/common.css */
+@charset "UTF-8";
 
-/* 1. 기본 레이아웃 */
+/* 1. 기본 레이아웃 및 폰트 (제공하신 스타일 그대로 유지) */
 body { 
     margin: 0; padding: 0; 
     font-family: 'Pretendard', sans-serif; 
     background-color: #fff; 
     color: #333;
 }
+
 .page-wrapper { 
     width: 80%; margin: 0 auto; 
     min-height: calc(100vh - 150px); 
     padding: 40px 0; 
 }
+
 .footer-spacer { height: 80px; }
 
-/* 2. 상단 네비게이션 (Bold Wire Style) */
+/* 2. 상단 네비게이션 */
 .wire-nav { 
     background-color: #fff; 
     border-bottom: 2px solid #333; 
     padding: 20px 0; 
 }
+
 .nav-inner { 
     width: 80%; margin: 0 auto; 
     display: flex; justify-content: space-between; align-items: center; 
 }
+
 .logo-text a { 
     text-decoration: none; color: #333; 
     font-weight: 900; font-size: 24px; letter-spacing: -1px; 
 }
+
 .nav-links { display: flex; align-items: center; gap: 15px; font-size: 14px; }
 .nav-item { text-decoration: none; color: #333; font-weight: bold; }
-.nav-item:hover { color: #ff3d00; }
-.owner-link { color: #007bff !important; }
+.nav-item:hover { color: #ff3d00; } /* 오렌지색 포인트 유지 */
+.owner-link { color: #007bff !important; } /* 파란색 링크 유지 */
 .divider { color: #eee; }
 .user-welcome { color: #666; }
 
@@ -41,20 +47,23 @@ body {
 }
 .btn-logout-text:hover { text-decoration: underline; }
 
-/* 3. 하단 고정 푸터 (Wireframe Dash Style) */
+/* 3. 하단 고정 푸터 */
 .wire-footer { 
     position: fixed; bottom: 0; left: 0; width: 100%; 
     height: 70px; background-color: #fff; 
     border-top: 2px solid #333; z-index: 1000; 
 }
+
 .footer-inner { 
     width: 80%; max-width: 600px; margin: 0 auto; height: 100%; 
     display: flex; justify-content: space-around; align-items: center; 
 }
+
 .foot-btn { 
     text-decoration: none; color: #333; 
     display: flex; flex-direction: column; align-items: center; gap: 4px; 
 }
+
 .foot-icon { font-size: 20px; }
 .foot-label { font-size: 11px; font-weight: bold; }
-.active-my { color: #ff3d00 !important; }
+.active-my { color: #ff3d00 !important; } /* 활성 상태 오렌지색 유지 */

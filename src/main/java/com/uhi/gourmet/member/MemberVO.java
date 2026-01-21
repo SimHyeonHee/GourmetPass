@@ -27,4 +27,14 @@ public class MemberVO {
     // 추가된 위도/경도
     private Double user_lat;
     private Double user_lon;
+    
+	@Override
+	public String toString() {
+		return "MemberVO [user_id=" + user_id + ", user_pw=" + user_pw + ", user_nm=" + user_nm + ", user_email="
+				+ user_email + ", user_tel=" + user_tel + ", user_zip=" + user_zip + ", user_addr1=" + user_addr1
+				+ ", user_addr2=" + user_addr2 + ", user_role=" + user_role + ", enabled=" + enabled + ", user_regdate="
+				+ user_regdate + ", user_lat=" + user_lat + ", user_lon=" + user_lon + "]";
+	}
+    
+    
 }

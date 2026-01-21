@@ -1,68 +1,91 @@
-<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+	pageEncoding="UTF-8"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/fmt" prefix="fmt"%>
-<%@ taglib uri="http://www.springframework.org/security/tags" prefix="sec"%>
+<%@ taglib uri="http://www.springframework.org/security/tags"
+	prefix="sec"%>
 
 <jsp:include page="../common/header.jsp" />
 
-<%-- 마이페이지 전용 스타일 및 리뷰 스크립트 연결 --%>
+<%-- [관심사 분리] 공용 마이페이지 스타일 및 통합 스크립트 연결 --%>
 <link rel="stylesheet" href="<c:url value='/resources/css/mypage.css'/>">
-<script src="<c:url value='/resources/js/review.js'/>"></script>
+<link rel="stylesheet" href="<c:url value='/resources/css/member.css'/>">
+<script src="<c:url value='/resources/js/mypage.js'/>"></script>
 
 <div class="mypage-wrapper">
-    <div class="profile-card">
-        <div class="profile-info">
-            <span class="profile-label">Member Profile</span>
-            <h2 class="user-name">${member.user_nm} <small>님</small></h2>
-            <p class="user-meta">${member.user_id} | ${member.user_tel}</p>
-        </div>
-        <div class="profile-icon">👤</div>
-    </div>
+	<div class="profile-card">
+		<div class="profile-info">
+			<span class="profile-label">MEMBER PROFILE</span>
+			<h2 class="user-name">${member.user_nm}
+				<small>님</small>
+			</h2>
+			<p class="user-meta">ID: ${member.user_id} | TEL:
+				${member.user_tel}</p>
+		</div>
+		<div class="btn-group" style="margin: 0; width: auto;">
+			<a href="<c:url value='/member/edit'/>" class="btn-wire"
+				style="height: 45px; padding: 0 20px; font-size: 14px;">정보 수정</a>
+			<form action="<c:url value='/logout'/>" method="post"
+				style="display: inline;">
+				<input type="hidden" name="${_csrf.parameterName}"
+					value="${_csrf.token}" />
+				<button type="submit" class="btn-wire btn-logout"
+					style="height: 45px; padding: 0 20px; font-size: 14px; margin-left: 10px;">로그아웃</button>
+			</form>
+		</div>
+	</div>
 
-    <div class="menu-container">
-        <div class="button-row">
-            <a href="<c:url value='/member/edit'/>" class="btn-wire">🛠️ 정보 수정</a>
-            <form action="<c:url value='/logout'/>" method="post" class="logout-form">
-                <input type="hidden" name="${_csrf.parameterName}" value="${_csrf.token}" />
-                <button type="submit" class="btn-wire btn-logout">🚪 로그아웃</button>
-            </form>
-        </div>
-        <a href="<c:url value='/wait/myStatus'/>" class="btn-wire btn-full">📅 나 의 이 용 현 황</a>
-    </div>
+	<%-- mypage.jsp 내부 핵심 버튼 링크 수정 --%>
+	<div class="menu-container">
+		<a href="<c:url value='/member/wait_status'/>" class="status-btn-full">
+			📅 나 의 이 용 현 황 (예약 / 웨이팅) </a>
+	</div>
+	<hr class="section-divider">
 
-    <hr class="section-divider">
+	<div class="dashboard-card">
+		<div class="card-header">
+			<h3 class="card-title">💬 나의 리뷰 기록 (${my_review_list.size()})</h3>
+		</div>
 
-    <div class="review-section">
-        <h3 class="review-title">💬 나의 리뷰 기록 (${my_review_list.size()})</h3>
-        
-        <c:choose>
-            <c:when test="${not empty my_review_list}">
-                <c:forEach var="review" items="${my_review_list}">
-                    <div class="review-card">
-                        <div class="review-header">
-                            <div class="store-link-box">
-                                <a href="<c:url value='/store/detail?storeId=${review.store_id}'/>" class="store-link">
-                                   🏨 ${review.store_name} ❯
-                                </a>
-                                <div class="star-rating">
-                                    <c:forEach begin="1" end="${review.rating}">⭐</c:forEach>
-                                </div>
-                            </div>
-                            <button type="button" class="btn-delete-small" 
-                                    onclick="confirmDeleteReview('${review.review_id}', '${review.store_id}')">삭제</button>
-                        </div>
-                        <p class="review-content">${review.content}</p>
-                        <div class="review-date">
-                            <fmt:formatDate value="${review.review_date}" pattern="yyyy.MM.dd" />
-                        </div>
-                    </div>
-                </c:forEach>
-            </c:when>
-            <c:otherwise>
-                <div class="empty-review">아직 작성된 리뷰가 없습니다.</div>
-            </c:otherwise>
-        </c:choose>
-    </div>
+		<div class="review-list">
+			<c:choose>
+				<c:when test="${not empty my_review_list}">
+					<c:forEach var="review" items="${my_review_list}">
+						<div class="item-card">
+							<div
+								style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px;">
+								<div class="store-link-box">
+									<a
+										href="<c:url value='/store/detail?storeId=${review.store_id}'/>"
+										style="font-size: 18px; font-weight: 900; color: #333; text-decoration: none;">
+										🏨 ${review.store_name} <small
+										style="font-weight: normal; color: #999;">❯</small>
+									</a>
+									<div style="margin-top: 5px; color: #f1c40f;">
+										<c:forEach begin="1" end="${review.rating}">⭐</c:forEach>
+									</div>
+								</div>
+								<button type="button" class="btn-wire"
+									style="height: 32px; padding: 0 12px; font-size: 12px; color: #dc3545; border-color: #dc3545;"
+									onclick="confirmDeleteReview('${review.review_id}', '${review.store_id}')">삭제</button>
+							</div>
+							<p
+								style="line-height: 1.6; font-size: 15px; color: #444; margin-bottom: 15px;">${review.content}</p>
+							<div style="font-size: 13px; color: #aaa; font-weight: 800;">
+								<fmt:formatDate value="${review.review_date}"
+									pattern="yyyy.MM.dd" />
+							</div>
+						</div>
+					</c:forEach>
+				</c:when>
+				<c:otherwise>
+					<div
+						style="text-align: center; padding: 60px 0; color: #ccc; font-weight: 900;">아직
+						작성된 리뷰 기록이 없습니다.</div>
+				</c:otherwise>
+			</c:choose>
+		</div>
+	</div>
 </div>
 
 <jsp:include page="../common/footer.jsp" />

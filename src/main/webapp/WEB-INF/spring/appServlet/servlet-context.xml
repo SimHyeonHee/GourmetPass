@@ -8,16 +8,13 @@
 		http://www.springframework.org/schema/beans https://www.springframework.org/schema/beans/spring-beans.xsd
 		http://www.springframework.org/schema/context https://www.springframework.org/schema/context/spring-context.xsd">
 
-	<beans:bean
-		class="org.springframework.context.support.PropertySourcesPlaceholderConfigurer">
-		<beans:property name="location" value="classpath:api.properties" />
-		<beans:property name="ignoreUnresolvablePlaceholders" value="true" />
-	</beans:bean>
+	<context:property-placeholder
+		location="classpath:api.properties" ignore-unresolvable="true" />
 
 	<annotation-driven />
 
 	<resources mapping="/resources/**" location="/resources/" />
-	<resources mapping="/upload/**" location="/resources/upload/" />
+	<resources mapping="/upload/**" location="${upload.path}" />
 
 	<beans:bean
 		class="org.springframework.web.servlet.view.InternalResourceViewResolver">
@@ -25,11 +22,13 @@
 		<beans:property name="suffix" value=".jsp" />
 	</beans:bean>
 
-	<context:component-scan base-package="com.uhi.gourmet" />
+	<context:component-scan
+		base-package="com.uhi.gourmet" />
 
-	<beans:bean id="multipartResolver" 
+	<beans:bean id="filterMultipartResolver"
 		class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
-		<beans:property name="maxUploadSize" value="10485760" /> <beans:property name="defaultEncoding" value="UTF-8" />
+		<beans:property name="maxUploadSize" value="10485760" />
+		<beans:property name="defaultEncoding" value="UTF-8" />
 	</beans:bean>
 
 </beans:beans>

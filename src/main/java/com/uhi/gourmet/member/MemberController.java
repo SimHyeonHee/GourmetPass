@@ -2,9 +2,7 @@
 package com.uhi.gourmet.member;
 
 import java.security.Principal;
-import java.util.ArrayList; // 추가
 import java.util.List;
-import java.util.stream.Collectors;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 
@@ -21,9 +19,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.uhi.gourmet.book.BookService;
-import com.uhi.gourmet.book.BookVO;
 import com.uhi.gourmet.wait.WaitService;
-import com.uhi.gourmet.wait.WaitVO;
 import com.uhi.gourmet.store.StoreMapper;
 import com.uhi.gourmet.store.StoreVO;
 import com.uhi.gourmet.review.ReviewService; 
@@ -134,51 +130,16 @@ public class MemberController {
         }
     }
 
-    // [v1.0.8 수정] NPE 방지를 위한 방어 코드 추가
-    @GetMapping("/myStatus")
+    /* [오류 해결] 404 에러 방지를 위해 실제 파일 위치인 wait 폴더를 지정합니다. */
+    @GetMapping("/wait_status")
     public String myStatus(Principal principal, Model model) {
-        // Principal 체크 (보안 강화)
         if (principal == null) return "redirect:/member/login";
         
         String user_id = principal.getName();
+        model.addAllAttributes(memberService.getMyStatusSummary(user_id));
         
-        List<BookVO> my_book_list = book_service.get_my_book_list(user_id);
-        List<WaitVO> my_wait_list = wait_service.get_my_wait_list(user_id);
-        
-        // [NPE 방지] 리스트가 null인 경우 빈 리스트로 초기화
-        if (my_book_list == null) my_book_list = new ArrayList<>();
-        if (my_wait_list == null) my_wait_list = new ArrayList<>();
-        
-        // 1. 현재 이용 중인 서비스 (WAITING, CALLED, ING)
-        model.addAttribute("activeWait", my_wait_list.stream()
-            .filter(w -> "WAITING".equals(w.getWait_status()) || "CALLED".equals(w.getWait_status()) || "ING".equals(w.getWait_status()))
-            .findFirst().orElse(null));
-            
-        model.addAttribute("activeBook", my_book_list.stream()
-            .filter(b -> "RESERVED".equals(b.getBook_status()) || "ING".equals(b.getBook_status()))
-            .findFirst().orElse(null));
-
-        // 2. 방문 완료 히스토리 (FINISH)
-        List<WaitVO> finishedWaits = my_wait_list.stream()
-            .filter(w -> "FINISH".equals(w.getWait_status()))
-            .collect(Collectors.toList());
-        
-        List<BookVO> finishedBooks = my_book_list.stream()
-            .filter(b -> "FINISH".equals(b.getBook_status()))
-            .collect(Collectors.toList());
-
-        model.addAttribute("finishedWaits", finishedWaits);
-        model.addAttribute("finishedBooks", finishedBooks);
-        
-        // 3. 미작성 리뷰 개수 계산
-        long pendingReviewCount = finishedWaits.stream().filter(w -> w.getReview_id() == null).count()
-                                + finishedBooks.stream().filter(b -> b.getReview_id() == null).count();
-        model.addAttribute("pendingReviewCount", pendingReviewCount);
-        
-        model.addAttribute("my_book_list", my_book_list);
-        model.addAttribute("my_wait_list", my_wait_list);
-        
-        return "member/myStatus"; 
+        // wait 폴더 내의 wait_status.jsp를 호출하도록 수정
+        return "wait/wait_status"; 
     }
 
     @GetMapping("/edit")

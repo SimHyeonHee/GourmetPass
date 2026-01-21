@@ -1,18 +1,15 @@
+/* com/uhi/gourmet/store/StoreController.java */
 package com.uhi.gourmet.store;
 
-import java.time.LocalTime;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map; 
-import java.io.File;
-import java.io.IOException;
 import java.security.Principal;
+import java.util.List;
+import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.messaging.simp.SimpMessagingTemplate; // 웹소켓 메시지 전송용
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -23,10 +20,12 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.uhi.gourmet.book.BookService;
+import com.uhi.gourmet.member.MemberService;
+import com.uhi.gourmet.member.MemberVO;
+import com.uhi.gourmet.review.ReviewService;
+import com.uhi.gourmet.review.ReviewVO;
 import com.uhi.gourmet.wait.WaitService;
-import com.uhi.gourmet.book.BookService; // [추가] 예약 서비스 임포트
-import com.uhi.gourmet.review.ReviewService; 
-import com.uhi.gourmet.review.ReviewVO;      
 
 @Controller
 @RequestMapping("/store")
@@ -39,15 +38,30 @@ public class StoreController {
     private WaitService waitService;
 
     @Autowired
-    private BookService bookService; // [추가] 예약 서비스 주입
+    private BookService bookService;
+    
+    @Autowired
+    private MemberService memberService;
 
     @Autowired
-    private ReviewService reviewService; 
+    private ReviewService reviewService;
+
+    // 실시간 알림 신호를 보내기 위한 템플릿 주입
+    @Autowired
+    private SimpMessagingTemplate messagingTemplate;
 
     @Value("${kakao.js.key}")
     private String kakaoJsKey;
+    
+	//portOne 결제 시작을 위한 변수
+    @Value("${portone.imp.init}")
+    private String impInit;
+    @Value("${portone.pg}")
+    private String pg;	// 테스트 결제를 위한 변수
+    
+    
 
-    // 1. 맛집 목록 조회
+    // 1. 맛집 목록 조회 (카테고리, 지역, 검색어 필터링)
     @GetMapping("/list")
     public String storeList(
             @RequestParam(value = "category", required = false) String category,
@@ -64,14 +78,30 @@ public class StoreController {
         return "store/store_list";
     }
 
-    // 2. 맛집 상세 정보 조회
+    // 2. 맛집 상세 정보 조회 (최근 리뷰 3개 요약 포함)
     @GetMapping("/detail")
     public String storeDetail(@RequestParam("storeId") int storeId, Model model, Principal principal) {
-        storeService.plusViewCount(storeId);
+        
+    	// 결제를 위한 JSP에 멤버정보 넣기
+    	if (principal != null) {
+            // principal.getName()은 현재 로그인한 사용자의 ID를 반환합니다.
+            // memberService에 ID로 회원 객체를 가져오는 메서드가 있다고 가정합니다.
+    		
+    		System.out.println("ID : " + principal.getName());
+            MemberVO loginUser = memberService.getMember(principal.getName()); 
+            System.out.println(loginUser);
+            
+            
+            // JSP에서 사용할 수 있도록 "loginUser"라는 이름으로 전달
+            model.addAttribute("loginUser", loginUser);
+        }
+    	
+    	storeService.plusViewCount(storeId);	// 조회수 증가
         
         StoreVO store = storeService.getStoreDetail(storeId);
         List<MenuVO> menuList = storeService.getMenuList(storeId);
         
+        // 실시간 대기 팀 수 조회 (관리자 대시보드와 동기화)
         int currentWaitCount = waitService.get_current_wait_count(storeId);
         model.addAttribute("currentWaitCount", currentWaitCount);
 
@@ -82,53 +112,71 @@ public class StoreController {
 
             store.setReview_cnt(cntVal != null ? Integer.parseInt(String.valueOf(cntVal)) : 0);
             store.setAvg_rating(rateVal != null ? Double.parseDouble(String.valueOf(rateVal)) : 0.0);
-            
-            List<String> timeSlots = generateTimeSlots(store);
-            model.addAttribute("timeSlots", timeSlots);
         }
 
+        // 상세페이지 전용: 최근 리뷰 최대 3개까지만 추출
         List<ReviewVO> reviewList = reviewService.getStoreReviews(storeId);
-        model.addAttribute("reviewList", reviewList);
-
-        boolean canWriteReview = false;
-        if (principal != null) {
-            canWriteReview = reviewService.checkReviewEligibility(principal.getName(), storeId);
+        if (reviewList != null && reviewList.size() > 3) {
+            reviewList = reviewList.subList(0, 3);
         }
-        model.addAttribute("canWriteReview", canWriteReview);
-
+        
         model.addAttribute("store", store);
         model.addAttribute("menuList", menuList);
+        model.addAttribute("reviewList", reviewList);
         model.addAttribute("kakaoJsKey", kakaoJsKey);
+        model.addAttribute("impInit", impInit);	// portone 결제를 위한 변수
+        model.addAttribute("pg", pg);	// portone 결제를 위한 변수
+
+        // 리뷰 작성 자격 체크
+        boolean canWriteReview = (principal != null) && reviewService.checkReviewEligibility(principal.getName(), storeId);
+        model.addAttribute("canWriteReview", canWriteReview);
         
         return "store/store_detail";
     }
     
+    // 3. 전체 리뷰 게시판 조회 (일반 회원 접근 허용 경로)
+    @GetMapping("/reviews")
+    public String allReviews(@RequestParam("store_id") int storeId, Model model) {
+        StoreVO store = storeService.getStoreDetail(storeId);
+        List<ReviewVO> allReviews = reviewService.getStoreReviews(storeId);
+        
+        model.addAttribute("store", store);
+        model.addAttribute("allReviews", allReviews);
+        
+        return "store/store_reviews";
+    }
+    
+    /**
+     * [리팩토링] 4. API: 예약 가능 시간 슬롯 동적 조회
+     * 특정 날짜를 기준으로 이미 예약된 슬롯을 제외하고 반환합니다. (중복 예약 방지)
+     */
     @GetMapping(value = "/api/timeSlots", produces = "application/json; charset=UTF-8")
     @ResponseBody 
-    public List<String> getTimeSlots(@RequestParam("store_id") int storeId) {
+    public List<String> getTimeSlots(@RequestParam("store_id") int storeId, 
+                                   @RequestParam("book_date") String bookDate) {
         StoreVO store = storeService.getStoreDetail(storeId);
-        return generateTimeSlots(store);
+        // DB에서 해당 날짜의 예약 현황을 체크하여 남은 시간만 생성하는 서비스 메서드 호출
+        return storeService.getAvailableTimeSlots(store, bookDate);
     }
 
-    // ================= [점주 전용: 상태 제어 로직 추가] =================
+    // ================= [실시간 매장 관리: 점주 전용] =================
 
-    // [v1.0.4 추가] 웨이팅 상태 변경 (ING, FINISH 등)
+    // 웨이팅 상태 제어 (호출 -> 입장확인 -> 식사완료)
     @PostMapping("/wait/updateStatus")
     public String updateWaitStatus(@RequestParam("wait_id") int waitId, 
-                                 @RequestParam("status") String status) {
+                                   @RequestParam("status") String status,
+                                   @RequestParam("user_id") String userId) {
+
         waitService.update_wait_status(waitId, status);
-        return "redirect:/member/mypage";
+        
+        // [핵심] 해당 유저의 개인 채널로 "상태 변경됨" 신호를 보냅니다.
+        messagingTemplate.convertAndSend("/topic/wait/" + userId, status);
+        
+        return "redirect:/book/manage"; 
     }
 
-    // [v1.0.4 추가] 예약 상태 변경 (ING, FINISH 등)
-    @PostMapping("/book/updateStatus")
-    public String updateBookStatus(@RequestParam("book_id") int bookId, 
-                                 @RequestParam("status") String status) {
-        bookService.update_book_status(bookId, status);
-        return "redirect:/member/mypage";
-    }
-
-    // ================= [가게 정보 관리] =================
+    
+    // ================= [가게 및 메뉴 정보 관리] =================
 
     @GetMapping("/register")
     public String registerStorePage() {
@@ -138,10 +186,10 @@ public class StoreController {
     @PostMapping("/register")
     public String registerStoreProcess(@ModelAttribute StoreVO vo, 
                                      @RequestParam(value="file", required=false) MultipartFile file,
-                                     HttpServletRequest request,
-                                     Principal principal) {
+                                     HttpServletRequest request, Principal principal) {
         if (file != null && !file.isEmpty()) {
-            vo.setStore_img(uploadFile(file, request));
+            String realPath = request.getSession().getServletContext().getRealPath("/resources/upload");
+            vo.setStore_img(storeService.uploadFile(file, realPath));
         }
         storeService.registerStore(vo, principal.getName());
         return "redirect:/member/mypage";
@@ -151,7 +199,6 @@ public class StoreController {
     public String updateStorePage(@RequestParam("store_id") int storeId, Model model, Principal principal) {
         StoreVO store = storeService.getMyStore(storeId, principal.getName());
         if (store == null) return "redirect:/member/mypage";
-        
         model.addAttribute("store", store);
         return "store/store_update";
     }
@@ -159,22 +206,19 @@ public class StoreController {
     @PostMapping("/update")
     public String updateStoreProcess(@ModelAttribute StoreVO vo, 
                                      @RequestParam(value="file", required=false) MultipartFile file, 
-                                     HttpServletRequest request,
-                                     Principal principal) {
+                                     HttpServletRequest request, Principal principal) {
         if (file != null && !file.isEmpty()) {
-            vo.setStore_img(uploadFile(file, request));
+            String realPath = request.getSession().getServletContext().getRealPath("/resources/upload");
+            vo.setStore_img(storeService.uploadFile(file, realPath));
         }
         storeService.modifyStore(vo, principal.getName());
         return "redirect:/member/mypage";
     }
 
-    // ================= [메뉴 관리] =================
-
     @GetMapping("/menu/register")
     public String menuRegisterPage(@RequestParam("store_id") int storeId, Model model, Principal principal) {
         StoreVO store = storeService.getMyStore(storeId, principal.getName());
         if (store == null) return "redirect:/member/mypage";
-        
         model.addAttribute("store_id", storeId);
         return "store/menu_register";
     }
@@ -182,16 +226,16 @@ public class StoreController {
     @PostMapping("/menu/register")
     public String menuRegisterProcess(@ModelAttribute MenuVO menuVO, 
                                       @RequestParam(value="file", required=false) MultipartFile file,
-                                      HttpServletRequest request,
-                                      Principal principal) {
+                                      HttpServletRequest request, Principal principal) {
         if (file != null && !file.isEmpty()) {
-            menuVO.setMenu_img(uploadFile(file, request));
+            String realPath = request.getSession().getServletContext().getRealPath("/resources/upload");
+            menuVO.setMenu_img(storeService.uploadFile(file, realPath));
         }
         storeService.addMenu(menuVO, principal.getName());
         return "redirect:/member/mypage"; 
     }
 
-    @GetMapping("/menu/delete")
+    @PostMapping("/menu/delete")
     public String deleteMenu(@RequestParam("menu_id") int menuId, Principal principal) {
         storeService.removeMenu(menuId, principal.getName());
         return "redirect:/member/mypage";
@@ -201,7 +245,6 @@ public class StoreController {
     public String menuUpdatePage(@RequestParam("menu_id") int menuId, Model model, Principal principal) {
         MenuVO menu = storeService.getMenuDetail(menuId, principal.getName());
         if (menu == null) return "redirect:/member/mypage";
-        
         model.addAttribute("menu", menu);
         return "store/menu_update";
     }
@@ -209,55 +252,12 @@ public class StoreController {
     @PostMapping("/menu/update")
     public String menuUpdateProcess(@ModelAttribute MenuVO vo, 
                                     @RequestParam(value="file", required=false) MultipartFile file,
-                                    HttpServletRequest request,
-                                    Principal principal) {
+                                    HttpServletRequest request, Principal principal) {
         if (file != null && !file.isEmpty()) {
-            vo.setMenu_img(uploadFile(file, request));
+            String realPath = request.getSession().getServletContext().getRealPath("/resources/upload");
+            vo.setMenu_img(storeService.uploadFile(file, realPath));
         }
         storeService.modifyMenu(vo, principal.getName());
         return "redirect:/member/mypage";
-    }
-
-    // ================= [Private Helpers] =================
-
-    private List<String> generateTimeSlots(StoreVO store) {
-        List<String> slots = new ArrayList<>();
-        if (store == null || store.getOpen_time() == null || store.getClose_time() == null) {
-            return slots;
-        }
-
-        try {
-            DateTimeFormatter inputFormatter = DateTimeFormatter.ofPattern("HH:mm[:ss]");
-            DateTimeFormatter outputFormatter = DateTimeFormatter.ofPattern("HH:mm");
-
-            LocalTime open = LocalTime.parse(store.getOpen_time(), inputFormatter);
-            LocalTime close = LocalTime.parse(store.getClose_time(), inputFormatter);
-            int unit = (store.getRes_unit() <= 0) ? 30 : store.getRes_unit();
-
-            LocalTime current = open;
-            while (current.isBefore(close)) {
-                slots.add(current.format(outputFormatter));
-                current = current.plusMinutes(unit);
-            }
-        } catch (Exception e) {
-            System.err.println("TimeSlot Generation Error: " + e.getMessage());
-        }
-        return slots;
-    }
-
-    private String uploadFile(MultipartFile file, HttpServletRequest request) {
-        String uploadPath = request.getSession().getServletContext().getRealPath("/resources/upload");
-        File dir = new File(uploadPath);
-        if (!dir.exists()) dir.mkdirs();
-
-        String originalName = file.getOriginalFilename();
-        String savedName = System.currentTimeMillis() + "_" + originalName;
-
-        try {
-            file.transferTo(new File(uploadPath, savedName));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return savedName;
     }
 }

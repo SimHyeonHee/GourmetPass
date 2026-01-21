@@ -1,318 +1,200 @@
+/* src/main/webapp/resources/css/member.css */
 @charset "UTF-8";
 
 /* =========================================
-   1. 공통 레이아웃 & 테이블 (v1.0.4 표준)
+   0. 폰트 및 초기화 (Pretendard 적용)
    ========================================= */
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css");
 
-/* 레이아웃 컨테이너 */
-.dashboard-container {
-    margin: 0 auto;
-    padding: 30px 20px;
+* {
+    margin: 0; padding: 0; box-sizing: border-box;
+    font-family: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
 }
 
-/* 테이블 공통: 열 너비 고정을 위해 table-layout: fixed 적용 */
-table { 
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 20px;
-    border: 2px solid #333; /* 전역 굵은 선 적용 */
-    table-layout: fixed;    /* 클래스로 지정한 너비를 강제 적용 */
-}
-
-/* 테이블 셀 스타일 */
-th, td { 
-    padding: 12px;
-    border: 1px solid #ccc; 
-    vertical-align: middle;
-    word-break: break-all; /* 내용이 길면 줄바꿈 처리 */
-}
-
-/* 헤더 배경색 */
-th { 
-    background-color: #f9f9f9; 
-    text-align: center; 
-    font-weight: bold; 
-    border-bottom: 2px solid #333; /* 헤더 구분선 강조 */
-}
-
-/* [v1.0.4 보강] 열 너비 조절용 유틸리티 클래스 */
-/* 기존 내용을 아래로 교체 또는 추가 */
-.w-3  { width: 3%; }  /* 추가: 번호/인원용 */
-.w-5  { width: 5%; }
-.w-7  { width: 7%; }
-.w-8  { width: 8%; }
-.w-10 { width: 10%; }
-.w-15 { width: 15%; }
-.w-20 { width: 20%; }
-.w-25 { width: 25%; }
-.w-30 { width: 30%; }
-.w-40 { width: 40%; }
-.w-45 { width: 45%; }
-.w-50 { width: 50%; }
-.w-58 { width: 58%; }
-.w-60 { width: 60%; }
-.w-70 { width: 70%; } /* 추가: 버튼 3개 수용을 위한 확장 */
-
-/* 정보 테이블 (마이페이지용) */
-.info-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-bottom: 20px;
-}
-.info-table th { width: 20%; background-color: #f5f5f5; }
-
-/* 메뉴 리스트 테이블 (점주용) */
-.menu-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 15px;
-    text-align: center;
-}
-.menu-table th { background-color: #eee; }
+body { background-color: #fff; color: #333; }
 
 /* =========================================
-   2. 입력 폼 스타일
+   1. 공통 레이아웃 & 컨테이너
    ========================================= */
+.login-wrapper, .select-wrapper, .edit-wrapper {
+    width: 90%;
+    max-width: 450px;
+    margin: 80px auto;
+    padding: 50px 40px;
+    border: 2px solid #333; /* Bold Wire 2px */
+    border-radius: 15px;    /* 15px 곡률 */
+    background: #fff;
+    text-align: center;
+    box-shadow: 8px 8px 0px #333; /* 설계서 느낌의 그림자 */
+}
+
+/* 회원가입 폼 전용 확장 너비 */
+.edit-wrapper { max-width: 700px; padding: 40px; }
+
+.login-title, .select-header, .edit-title { 
+    margin-bottom: 35px; font-size: 26px; font-weight: 900; letter-spacing: -1.5px; 
+}
+
+/* =========================================
+   2. 폼 요소 스타일 (정렬 교정 핵심)
+   ========================================= */
+.form-group {
+    margin-bottom: 25px;
+    text-align: left; /* 이미지에서 가운데 떠있던 레이블을 왼쪽으로 고정 */
+}
+
+.form-group label {
+    display: block;
+    font-size: 14px;
+    font-weight: 800;
+    margin-bottom: 8px;
+    padding-left: 4px;
+}
+
+/* 입력창 스타일 통일 */
 input[type="text"], 
 input[type="password"], 
 input[type="email"],
 input[type="time"],
 select,
-textarea {
+textarea,
+.login-input {
     width: 100%;
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 8px; /* 폼 요소 곡률 통일 */
-    font-size: 14px;
-    box-sizing: border-box;
-}
-
-/* 읽기 전용 필드 (회색 배경) */
-input[readonly] { 
-    background-color: #f5f5f5; 
-    color: #999;
-    cursor: not-allowed;
-}
-
-/* =========================================
-   3. 점주 페이지 레이아웃 (좌우 배치)
-   ========================================= */
-.owner-grid {
-    display: flex;
-    gap: 20px;
-    margin-top: 20px;
-}
-
-/* 점주 카드 스타일 */
-.owner-card {
-    flex: 1;
-    border: 2px solid #333;
-    padding: 20px;
+    height: 50px; /* 모든 입력창 높이 고정 */
+    padding: 0 15px;
+    border: 2px solid #333; /* 강한 실선 */
+    border-radius: 10px;
+    font-size: 16px;
     background: #fff;
-    border-radius: 15px;
+    outline: none;
+    transition: all 0.2s;
+}
+
+input:focus { background-color: #fcfcfc; border-color: #ff3d00; }
+input[readonly] { background-color: #f5f5f5; cursor: not-allowed; border-color: #ccc; }
+
+/* 텍스트 영역 전용 */
+textarea { height: auto; padding: 15px; line-height: 1.6; }
+
+/* =========================================
+   3. 버튼 시스템 (이미지 속 찌그러짐 해결)
+   ========================================= */
+.btn-group {
+    display: flex;
+    gap: 12px;
+    margin-top: 30px;
+    width: 100%;
+}
+
+/* 버튼 공통: flex 1을 통해 너비 대칭 확보 */
+.btn-login, .btn-signup, .btn-submit, .btn-cancel, .btn-wire {
+    flex: 1;
+    height: 50px;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 800;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    transition: all 0.1s;
+    border: 2px solid #333;
+}
+
+.btn-login, .btn-submit, .btn-primary {
+    background: #333; color: #fff; border: none;
+}
+.btn-login:hover, .btn-submit:hover { background: #000; transform: translateY(-2px); }
+
+.btn-signup, .btn-cancel, .btn-wire {
+    background: #fff; color: #333;
+}
+.btn-signup:hover, .btn-cancel:hover, .btn-wire:hover { background: #f8f8f8; transform: translateY(-2px); }
+
+/* 중복확인/주소검색 등 입력창 옆 작은 버튼 */
+.input-row {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+}
+.input-row input { flex: 1; }
+.input-row .btn-wire {
+    flex: none;
+    width: 100px; /* 고정 너비로 글자 깨짐 방지 */
+    height: 50px;
+    font-size: 14px;
 }
 
 /* =========================================
-   4. 버튼 & 유틸리티
+   4. 테이블 레이아웃 (일반/점주 가입용)
    ========================================= */
-
-/* 기본 액션 버튼 */
-.btn-action { 
-    padding: 8px 15px; 
-    background: #333; 
-    color: white; 
-    border: none; 
-    border-radius: 8px; 
-    cursor: pointer; 
-    text-decoration: none; 
-    font-size: 13px; 
-    font-weight: bold;
+.edit-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
 }
 
-/* 색상별 작은 버튼 (테이블 내 사용) */
-.btn-primary { background: #333; color: white; border: none; padding: 6px 12px; border-radius: 5px; cursor: pointer; }
-.btn-danger { background: white; border: 1px solid #dc3545; color: #dc3545; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 12px; }
-.btn-success { background: #2f855a; color: white; border: none; padding: 6px 12px; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 13px; }
-
-/* 점주용 강조 버튼 (예약 관리 등) */
-.btn-orange { 
-    background: #ff3d00; 
-    color: white; 
-    border: none; 
-    width: 100%; 
-    padding: 12px; 
-    font-weight: bold; 
-    font-size: 14px; 
-    margin-top: 15px; 
-    border-radius: 8px; 
-    cursor: pointer; 
+.edit-table th {
+    width: 25%;
+    padding: 20px 10px;
+    text-align: left;
+    vertical-align: middle;
+    border-bottom: 1px solid #eee;
+    font-size: 15px;
+    font-weight: 800;
 }
 
-/* 텍스트 링크형 버튼 */
-.btn-link-logout { 
-    background: none; 
-    border: none; 
-    color: #dc3545; 
-    cursor: pointer; 
-    font-weight: bold; 
-    font-size: 14px; 
-}
-
-.btn-link-withdraw { 
-    color: #999; 
-    font-size: 12px; 
-    border: none; 
-    background: none; 
-    cursor: pointer; 
-    text-decoration: underline; 
-    margin-top: 10px;
+.edit-table td {
+    width: 75%;
+    padding: 15px 10px;
+    border-bottom: 1px solid #eee;
+    text-align: left;
 }
 
 /* =========================================
-   5. 상태 메시지 & 뱃지 & 이미지
+   5. 가입 유형 선택 (SIGNUP_SELECT 카드 복구)
    ========================================= */
-
-.msg-ok { color: #2f855a; font-size: 12px; font-weight: bold; margin-left: 5px; }
-.msg-no { color: #dc3545; font-size: 12px; font-weight: bold; margin-left: 5px; }
-
-#coordStatus { margin-top: 5px; font-size: 12px; }
-
-.badge-cat { border: 1px solid #333; color: #333; padding: 2px 8px; font-size: 12px; border-radius: 10px; font-weight: bold; }
-.badge-best { background: #FFD700; color: #333; padding: 2px 6px; font-size: 11px; border-radius: 3px; font-weight: bold; margin-left: 5px; }
-
-.img-thumbnail { width: 150px; height: 150px; object-fit: cover; border: 1px solid #eee; border-radius: 5px; }
-.img-menu { width: 50px; height: 50px; object-fit: cover; border-radius: 3px; border: 1px solid #ddd; }
-
-/* =========================================
-   6. 정보 수정 페이지 (member_edit) 전용
-   ========================================= */
-.edit-wrapper { 
-    width: 80%; max-width: 800px; margin: 40px auto; padding: 40px; 
-    border: 2px solid #333; border-radius: 15px; background: #fff; 
+.select-group {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    margin-top: 30px;
 }
-.edit-title { margin-bottom: 30px; font-size: 24px; font-weight: bold; text-align: center; }
-.edit-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-.edit-table th { width: 25%; padding: 15px 10px; text-align: left; vertical-align: middle; border-bottom: 1px solid #eee; font-size: 14px; color: #333; }
-.edit-table td { width: 75%; padding: 15px 10px; border-bottom: 1px solid #eee; }
-
-/* =========================================
-   7. 가입 유형 선택 (signup_select) 전용
-   ========================================= */
-.select-wrapper { width: 80%; margin: 60px auto; text-align: center; font-family: sans-serif; }
-.select-group { display: flex; justify-content: center; gap: 30px; margin-top: 40px; flex-wrap: wrap; }
 
 .select-card {
-    flex: 0 0 280px; padding: 45px 20px; text-decoration: none; color: #333;
-    border: 2px solid #333; border-radius: 15px; background: #fff;
-    transition: 0.2s; display: block; box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 20px;
+    text-decoration: none;
+    color: #333;
+    border: 2px solid #333;
+    border-radius: 15px;
+    background: #fff;
+    transition: 0.2s;
 }
 
 .select-card:hover { 
-    transform: translateY(-8px); 
-    box-shadow: 8px 8px 0px #333; 
+    transform: translateY(-5px); 
+    box-shadow: 6px 6px 0px #333;
+    background-color: #fcfcfc;
 }
 
-.select-icon { font-size: 60px; margin-bottom: 25px; display: block; }
-.select-title { font-size: 22px; font-weight: bold; margin-bottom: 15px; display: block; }
-.select-desc { font-size: 15px; color: #666; line-height: 1.6; display: block; }
+.select-icon { font-size: 50px; margin-bottom: 15px; display: block; }
+.select-title { font-size: 20px; font-weight: 900; margin-bottom: 10px; display: block; }
+.select-desc { font-size: 14px; color: #666; line-height: 1.6; display: block; }
 
 /* =========================================
-   8. 대시보드 & 이용현황 (manage / myStatus) 전용
+   6. 유틸리티 & 상태 메시지
    ========================================= */
+.msg-box { font-size: 12px; margin-top: 8px; display: block; font-weight: bold; }
+.msg-ok { color: #2f855a; }
+.msg-no { color: #dc3545; }
 
-.dashboard-section, .history-section { margin-top: 40px; }
-.section-title { 
-    font-size: 20px; font-weight: bold; padding-bottom: 10px; margin-bottom: 20px;
-    border-bottom: 2px solid #333; 
-}
-.wait-color { color: #2f855a; border-color: #2f855a; }
-.book-color { color: #e65100; border-color: #e65100; }
+.w-10 { width: 10%; } .w-20 { width: 20%; } .w-70 { width: 70%; }
+.mt-10 { margin-top: 10px; } .mb-10 { margin-bottom: 10px; }
+.text-center { text-align: center; }
 
-.active-service-card {
-    background: #fff; border: 2px solid #333; border-radius: 15px; 
-    padding: 30px; margin-bottom: 20px;
-}
-.card-label { margin-top: 0; color: #333; font-size: 16px; margin-bottom: 20px; }
-
-.status-item-row { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; }
-.status-item-row.underline { border-bottom: 1px dashed #ddd; }
-
-.item-title { margin: 8px 0; font-size: 22px; }
-.item-desc { color: #666; margin: 0; font-size: 14px; }
-.item-action { text-align: right; }
-
-.status-text-green { font-size: 24px; font-weight: bold; color: #2f855a; display: block; margin-bottom: 5px; }
-.status-text-orange { font-size: 20px; font-weight: bold; color: #e65100; }
-
-.empty-status-box, .empty-msg {
-    background: #f9f9f9; border: 1px dashed #ccc; border-radius: 15px; 
-    padding: 40px; text-align: center; color: #999; margin: 20px 0;
-}
-
-.history-list-box { border: 1px solid #ddd; border-radius: 10px; background: #fff; padding: 10px; }
-.history-item { 
-    padding: 15px; border-bottom: 1px solid #eee; 
-    display: flex; justify-content: space-between; align-items: center; 
-}
-.history-item:last-child { border-bottom: none; }
-
-.btn-row-flex { display: flex; gap: 8px; justify-content: center; }
-.btn-primary-sm { background: #333; color: #fff; border: none; padding: 6px 12px; border-radius: 5px; cursor: pointer; font-size: 12px; }
-.btn-success-sm { background: #2f855a; color: #fff; border: none; padding: 6px 12px; border-radius: 5px; cursor: pointer; font-size: 12px; }
-.btn-danger-sm { background: #fff; color: #dc3545; border: 1px solid #dc3545; padding: 5px 11px; border-radius: 5px; cursor: pointer; font-size: 12px; }
-.btn-wire-sm { background: #fff; color: #333; border: 1px solid #333; padding: 5px 12px; border-radius: 5px; cursor: pointer; font-size: 12px; }
-.btn-disabled-sm { background: #eee; color: #999; border: 1px solid #ccc; padding: 5px 12px; border-radius: 5px; cursor: default; font-size: 12px; }
-
-.toggle-container { margin-top: 30px; text-align: center; }
-.btn-history-toggle {
-    background: none; border: 1px solid #999; color: #666; 
-    padding: 10px 25px; border-radius: 25px; cursor: pointer; font-size: 14px;
-    transition: 0.2s;
-}
-.btn-history-toggle:hover { background: #f5f5f5; border-color: #333; color: #333; }
-
-/* =========================================
-   9. 버튼 그룹 및 특수 액션 (member_edit 하단)
-   ========================================= */
-.btn-group { 
-    display: flex; gap: 15px; margin-top: 35px; justify-content: center; 
-}
-
-.btn-submit { 
-    flex: 2; padding: 15px; background: #333; color: #fff; 
-    border: 2px solid #333; border-radius: 8px; font-size: 16px; 
-    font-weight: bold; cursor: pointer; transition: 0.2s;
-}
-.btn-submit:hover { background: #000; }
-
-.btn-cancel { 
-    flex: 1; padding: 15px; background: #fff; color: #333; 
-    border: 2px solid #333; border-radius: 8px; font-size: 16px; 
-    font-weight: bold; cursor: pointer; text-align: center; text-decoration: none;
-}
-.btn-cancel:hover { background: #f5f5f5; }
-
-.withdraw-section { 
-    margin-top: 60px; padding-top: 25px; border-top: 2px dashed #eee; text-align: right; 
-}
-
-/* =========================================
-   10. [v1.0.4] 매장 관리 (manage.jsp) 전용 스타일
-   ========================================= */
-.wait-color { color: #2f855a; border-color: #2f855a; }
-.book-color { color: #e65100; border-color: #e65100; }
-
-/* 상태 뱃지 */
-.badge-status { padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; color: #fff; display: inline-block; }
-.bg-wait { background-color: #ffc107; color: #333; }   /* 대기중 (노랑) */
-.bg-call { background-color: #17a2b8; }                /* 호출/입장 (파랑) */
-.bg-finish { background-color: #28a745; }              /* 완료 (초록) */
-.bg-cancel { background-color: #6c757d; }              /* 취소/노쇼 (회색) */
-
-/* 관리 버튼 그룹 */
-.action-btn-group { display: flex; gap: 2px; justify-content: center; align-items: center; }
-.action-btn-group button { font-size: 11px; padding: 5px 4px; white-space: nowrap; min-width: 55px; }
-.p-tight { padding: 12px 4px !important; }
-/* 잠금 메시지 */
-.lock-msg { font-size: 12px; color: #dc3545; font-weight: bold; }
-.empty-msg { padding: 40px; text-align: center; color: #999; }
+/* 하단 푸터 간격 */
+.footer-spacer { height: 100px; }
