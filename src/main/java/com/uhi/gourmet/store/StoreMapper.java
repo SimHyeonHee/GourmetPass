@@ -11,10 +11,19 @@ public interface StoreMapper {
     // [1] 메인 페이지용 인기 맛집 조회 (조회수 기준 상위 6개)
     List<StoreVO> selectPopularStore();
 
-    // [2] 맛집 리스트 조회 (카테고리, 지역, 검색어로 필터링 가능)
-    List<StoreVO> getListStore(@Param("category") String category, 
-                             @Param("region") String region, 
-                             @Param("keyword") String keyword);
+    /**
+     * [DTO 적용] 2. 맛집 리스트 조회
+     * 기존 개별 @Param 방식에서 Criteria DTO 방식으로 변경하여 확장성을 확보했습니다.
+     * @param cri 페이지 번호, 출력량, 검색 조건을 담은 객체
+     */
+    List<StoreVO> getListStore(@Param("cri") Criteria cri);
+
+    /**
+     * [신규] 2-1. 페이징을 위한 전체 맛집 개수 조회
+     * PageDTO에서 실제 마지막 페이지(realEnd)를 계산하기 위해 반드시 필요합니다.
+     * @param cri 검색 조건이 포함된 Criteria 객체
+     */
+    int getTotalCount(@Param("cri") Criteria cri);
 
     // [3] 특정 가게의 상세 정보 조회 (store_id 기준)
     StoreVO getStoreDetail(int store_id);
@@ -25,29 +34,22 @@ public interface StoreMapper {
     // [5] 가게 상세 페이지 열람 시 조회수 증가
     void updateViewCount(int store_id);
 
-    // [6] 가게 정보 등록 (점주 user_id 포함)
+    // [6] 가게 정보 등록
     void insertStore(StoreVO store);
 
-    // [7] 점주 아이디로 해당 점주의 가게 조회 (1:1 구조)
+    // [7] 점주 아이디로 해당 점주의 가게 조회
     StoreVO getStoreByUserId(String user_id);
 
     // [8] 가게 정보 수정
     void updateStore(StoreVO store);
 
-    // [9] 메뉴 관리 (등록, 삭제, 수정, 상세조회)
+    // [9] 메뉴 관리
     void insertMenu(MenuVO menu);
     void deleteMenu(int menu_id);
     void updateMenu(MenuVO menu);
     MenuVO getMenuDetail(int menu_id);
 
-    /**
-     * [교정 포인트] 10. 특정 날짜에 이미 점유된 예약 시간 리스트 조회
-     * 기능: StoreServiceImpl.java의 getAvailableTimeSlots에서 호출하여 중복 예약을 필터링합니다.
-     * @param store_id 해당 가게 번호
-     * @param book_date 예약 시도 날짜 (YYYY-MM-DD)
-     * @return 이미 예약된 시간 리스트 (예: ["12:00", "13:30"])
-     */
+    // [10] 특정 날짜에 점유된 예약 시간 리스트 조회
     List<String> getBookedTimes(@Param("store_id") int store_id, 
                               @Param("book_date") String book_date);
-    
 }

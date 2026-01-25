@@ -1,32 +1,85 @@
 /* /resources/js/store_list.js */
 
 /**
- * 필터 폼 제출
+ * [기능] 페이지 이동 함수
+ * @param {number} pageNum - 이동할 페이지 번호
+ * 설명: 페이징 버튼 클릭 시 호출되며, 기존 검색 조건을 유지한 채 페이지 값만 바꿔 제출합니다.
  */
-function submitFilter() {
-    document.getElementById('filterForm').submit();
-}
-
-/**
- * 카테고리 선택 핸들러
- * @param {string} cat - 선택된 카테고리명
- */
-function selectCategory(cat) {
-    const hiddenInput = document.getElementById('selectedCategory');
-    if (hiddenInput) {
-        hiddenInput.value = cat;
+function movePage(pageNum) {
+    const pageInput = document.getElementById('pageNum');
+    if (pageInput) {
+        pageInput.value = pageNum;
         submitFilter();
     }
 }
 
-// 엔터키 검색 지원
+/**
+ * [기능] 필터 변경 시 초기화 함수
+ * 설명: 지역이나 검색 조건이 바뀔 경우, 기존 페이지 번호를 1로 리셋한 뒤 검색을 수행합니다.
+ */
+function resetPageAndSubmit() {
+    const pageInput = document.getElementById('pageNum');
+    if (pageInput) {
+        pageInput.value = 1; // 필터 변경 시 첫 페이지부터 다시 조회
+    }
+    submitFilter();
+}
+
+/**
+ * [기능] 카테고리 선택/해제 핸들러
+ * @param {string} cat - 선택된 카테고리명
+ * 설명: 카테고리 칩 클릭 시 호출됩니다. 이미 선택된 카테고리라면 선택을 해제(전체보기)합니다.
+ */
+function selectCategory(cat) {
+    const hiddenInput = document.getElementById('selectedCategory');
+    const pageInput = document.getElementById('pageNum');
+    
+    if (hiddenInput) {
+        // 이미 선택된 카테고리를 다시 누르면 해제(전체보기), 아니면 새로 선택
+        if (hiddenInput.value === cat) {
+            hiddenInput.value = "";
+        } else {
+            hiddenInput.value = cat;
+        }
+        
+        // 페이지 번호를 1로 리셋 (카테고리 변경 대응)
+        if (pageInput) pageInput.value = 1;
+        
+        submitFilter();
+    }
+}
+
+/**
+ * [핵심] 폼 제출 함수
+ * 설명: filterForm을 서버(StoreController)로 전송합니다. 
+ * 모든 hidden 필드와 검색 조건이 Criteria DTO에 바인딩됩니다.
+ */
+function submitFilter() {
+    const filterForm = document.getElementById('filterForm');
+    if (filterForm) {
+        filterForm.submit();
+    }
+}
+
+/**
+ * [이벤트] 페이지 로드 시 검색창 엔터키 및 초기화 설정
+ */
 document.addEventListener("DOMContentLoaded", function() {
+    // .wire-input 클래스를 가진 검색창에서 엔터키 입력 시 검색 실행
     const searchInput = document.querySelector(".wire-input");
+    
     if (searchInput) {
         searchInput.addEventListener("keypress", function(e) {
             if (e.key === 'Enter') {
-                e.preventDefault();
-                submitFilter();
+                e.preventDefault(); // 기본 폼 제출 방지
+                
+                // 만약 검색창이 filterForm 외부에 있다면, 내부의 hidden keyword 필드에 값을 복사
+                const hiddenKeyword = document.querySelector("#filterForm input[name='keyword']");
+                if (hiddenKeyword) {
+                    hiddenKeyword.value = searchInput.value;
+                }
+                
+                resetPageAndSubmit();
             }
         });
     }

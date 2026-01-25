@@ -3,6 +3,72 @@
 
 <mapper namespace="com.uhi.gourmet.store.StoreMapper">
 
+    <sql id="criteria">
+        <trim prefix="AND (" suffix=")" prefixOverrides="OR">
+            <if test="cri.category != null and cri.category != ''">
+                s.store_category = #{cri.category}
+            </if>
+            <if test="cri.region != null and cri.region != ''">
+                AND s.store_addr1 LIKE '%' || #{cri.region} || '%'
+            </if>
+            <if test="cri.keyword != null and cri.keyword != ''">
+                AND s.store_name LIKE '%' || #{cri.keyword} || '%'
+            </if>
+        </trim>
+    </sql>
+
+    <select id="getListStore" resultType="com.uhi.gourmet.store.StoreVO">
+        <![CDATA[
+        SELECT * FROM (
+            SELECT /*+ INDEX_DESC(STORE PK_STORE) */
+                rownum AS rn, 
+                inner_s.*
+            FROM (
+                SELECT 
+                    s.*,
+                    (SELECT COUNT(*) FROM REVIEW r WHERE r.store_id = s.store_id) as review_cnt,
+                    (SELECT NVL(ROUND(AVG(rating), 1), 0) FROM REVIEW r WHERE r.store_id = s.store_id) as avg_rating
+                FROM STORE s
+                WHERE 1=1
+        ]]>
+        <include refid="criteria" />
+        <![CDATA[
+                ORDER BY s.store_id DESC
+            ) inner_s
+            WHERE rownum <= #{cri.pageNum} * #{cri.amount}
+        )
+        WHERE rn > (#{cri.pageNum} - 1) * #{cri.amount}
+        ]]>
+    </select>
+
+    <select id="getTotalCount" resultType="int">
+        SELECT COUNT(*) 
+        FROM STORE s
+        WHERE 1=1
+        <include refid="criteria" />
+    </select>
+
+    <select id="selectPopularStore" resultType="com.uhi.gourmet.store.StoreVO">
+        SELECT * FROM (
+            SELECT 
+                s.*,
+                (SELECT COUNT(*) FROM REVIEW r WHERE r.store_id = s.store_id) as review_cnt,
+                (SELECT NVL(ROUND(AVG(rating), 1), 0) FROM REVIEW r WHERE r.store_id = s.store_id) as avg_rating
+            FROM STORE s
+            ORDER BY s.store_cnt DESC
+        )
+        WHERE ROWNUM &lt;= 6
+    </select>
+
+    <select id="getStoreDetail" parameterType="int" resultType="com.uhi.gourmet.store.StoreVO">
+        SELECT
+            s.*,
+            (SELECT COUNT(*) FROM REVIEW r WHERE r.store_id = s.store_id) as review_cnt,
+            (SELECT NVL(ROUND(AVG(rating), 1), 0) FROM REVIEW r WHERE r.store_id = s.store_id) as avg_rating
+        FROM STORE s
+        WHERE s.store_id = #{store_id}
+    </select>
+
     <insert id="insertStore" parameterType="com.uhi.gourmet.store.StoreVO">
         INSERT INTO STORE (
             store_id, user_id, store_name,
@@ -30,42 +96,6 @@
             0
         )
     </insert>
-
-    <select id="selectPopularStore" resultType="com.uhi.gourmet.store.StoreVO">
-        SELECT * FROM (
-            SELECT 
-                s.*,
-                (SELECT COUNT(*) FROM REVIEW r WHERE r.store_id = s.store_id) as review_cnt,
-                (SELECT NVL(ROUND(AVG(rating), 1), 0) FROM REVIEW r WHERE r.store_id = s.store_id) as avg_rating
-            FROM STORE s
-            ORDER BY s.store_cnt DESC
-        )
-        WHERE ROWNUM &lt;= 6
-    </select>
-
-    <select id="getListStore" resultType="com.uhi.gourmet.store.StoreVO">
-        SELECT 
-            s.*,
-            (SELECT COUNT(*) FROM REVIEW r WHERE r.store_id = s.store_id) as review_cnt,
-            (SELECT NVL(ROUND(AVG(rating), 1), 0) FROM REVIEW r WHERE r.store_id = s.store_id) as avg_rating
-        FROM STORE s
-        WHERE 1=1
-        <if test="category != null and category != ''"> AND s.store_category = #{category} </if>
-        <if test="region != null and region != ''"> AND s.store_addr1 LIKE '%' || #{region} || '%' </if>
-        <if test="keyword != null and keyword != ''">
-            AND s.store_name LIKE '%' || #{keyword} || '%'
-        </if>
-        ORDER BY s.store_id DESC
-    </select>
-
-    <select id="getStoreDetail" parameterType="int" resultType="com.uhi.gourmet.store.StoreVO">
-        SELECT
-            s.*,
-            (SELECT COUNT(*) FROM REVIEW r WHERE r.store_id = s.store_id) as review_cnt,
-            (SELECT NVL(ROUND(AVG(rating), 1), 0) FROM REVIEW r WHERE r.store_id = s.store_id) as avg_rating
-        FROM STORE s
-        WHERE s.store_id = #{store_id}
-    </select>
 
     <select id="getStoreByUserId" parameterType="string" resultType="com.uhi.gourmet.store.StoreVO">
         SELECT * FROM STORE WHERE user_id = #{user_id}
@@ -135,6 +165,4 @@
           AND TO_CHAR(book_date, 'YYYY-MM-DD') = #{book_date}
         AND book_status NOT IN ('CANCELED', 'NOSHOW')
     </select>
-    
-   
 </mapper>

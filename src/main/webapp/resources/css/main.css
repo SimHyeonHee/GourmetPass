@@ -125,11 +125,12 @@
     transition: 0.3s; 
     display: flex;
     flex-direction: column;
+    box-shadow: 6px 6px 0px #333;
 }
 
 .store-card:hover { 
     transform: translateY(-8px); 
-    box-shadow: 10px 10px 0px #333; 
+    box-shadow: 12px 12px 0px #333; 
 }
 
 .store-img-box { 
@@ -148,9 +149,11 @@
     object-fit: cover; 
 }
 
-.no-img-text {
+/* [교정] main.jsp의 .no-img-placeholder와 클래스명 일치 */
+.no-img-placeholder {
     color: #ccc;
     font-weight: 900;
+    font-size: 14px;
 }
 
 .store-info { 
@@ -158,10 +161,15 @@
     flex-grow: 1; 
 }
 
-.store-cat { 
-    font-size: 13px; 
-    color: #888; 
-    font-weight: 800; 
+/* [교정] main.jsp의 .badge-cat과 클래스명 일치 */
+.badge-cat { 
+    display: inline-block;
+    padding: 3px 10px;
+    border: 2px solid #333;
+    border-radius: 8px;
+    font-size: 11px; 
+    background: #fff;
+    font-weight: 900; 
     margin-bottom: 10px; 
 }
 
@@ -191,6 +199,7 @@
     color: #666;
     font-size: 14px;
     margin-bottom: 15px;
+    font-weight: 700;
 }
 
 .store-stats { 
@@ -213,11 +222,13 @@
 
 /* 데이터가 없을 때 표시되는 상자 */
 .empty-status-box {
+    grid-column: span 3;
     padding: 100px;
     text-align: center;
     border: 2px dashed #ccc;
     border-radius: 15px;
     color: #999;
+    font-weight: 800;
 }
 
 /* 반응형 설정 */

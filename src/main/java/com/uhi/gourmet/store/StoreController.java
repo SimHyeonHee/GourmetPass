@@ -9,7 +9,7 @@ import javax.servlet.http.HttpServletRequest;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.messaging.simp.SimpMessagingTemplate; // 웹소켓 메시지 전송용
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -46,38 +46,42 @@ public class StoreController {
     @Autowired
     private ReviewService reviewService;
 
-    // 실시간 알림 신호를 보내기 위한 템플릿 주입
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
 
     @Value("${kakao.js.key}")
     private String kakaoJsKey;
     
-	//portOne 결제 시작을 위한 변수
     @Value("${portone.imp.init}")
     private String impInit;
     @Value("${portone.pg}")
-    private String pg;	// 테스트 결제를 위한 변수
-    
-    
+    private String pg;
 
-    // 1. 맛집 목록 조회 (카테고리, 지역, 검색어 필터링)
+    /**
+     * [리팩토링] 1. 맛집 목록 조회 (페이징 및 동적 필터링 반영)
+     * @param cri : 같은 패키지 내 Criteria.java 객체를 바인딩합니다.
+     */
     @GetMapping("/list")
-    public String storeList(
-            @RequestParam(value = "category", required = false) String category,
-            @RequestParam(value = "region", required = false) String region,
-            @RequestParam(value = "keyword", required = false) String keyword,
-            Model model) {
-    	
-    	System.out.println(category);
-    	System.out.println(region);
-    	System.out.println(keyword);
+    public String storeList(@ModelAttribute Criteria cri, Model model) {
         
-        List<StoreVO> storeList = storeService.getStoreList(category, region, keyword);
+        // [로직 1] Criteria 바구니를 사용하여 해당 페이지의 데이터만 가져옵니다.
+        List<StoreVO> storeList = storeService.getStoreList(cri);
         model.addAttribute("storeList", storeList); 
-        model.addAttribute("category", category);
-        model.addAttribute("region", region);
-        model.addAttribute("keyword", keyword);
+        
+        // [로직 2] 검색 조건에 맞는 '전체 데이터 개수'를 가져옵니다.
+        int total = storeService.getTotal(cri);
+        
+        /**
+         * [DTO 활용] PageDTO (페이징 계산 엔진)
+         * 동일 패키지 내의 PageDTO 클래스를 인스턴스화합니다.
+         */
+        PageDTO pageMaker = new PageDTO(cri, total);
+        model.addAttribute("pageMaker", pageMaker);
+        
+        // [상태 유지] 필터 선택 정보 전달
+        model.addAttribute("category", cri.getCategory());
+        model.addAttribute("region", cri.getRegion());
+        model.addAttribute("keyword", cri.getKeyword());
         
         return "store/store_list";
     }
@@ -86,26 +90,16 @@ public class StoreController {
     @GetMapping("/detail")
     public String storeDetail(@RequestParam("storeId") int storeId, Model model, Principal principal) {
         
-    	// 결제를 위한 JSP에 멤버정보 넣기
-    	if (principal != null) {
-            // principal.getName()은 현재 로그인한 사용자의 ID를 반환합니다.
-            // memberService에 ID로 회원 객체를 가져오는 메서드가 있다고 가정합니다.
-    		
-    		System.out.println("ID : " + principal.getName());
+        if (principal != null) {
             MemberVO loginUser = memberService.getMember(principal.getName()); 
-            System.out.println(loginUser);
-            
-            
-            // JSP에서 사용할 수 있도록 "loginUser"라는 이름으로 전달
             model.addAttribute("loginUser", loginUser);
         }
-    	
-    	storeService.plusViewCount(storeId);	// 조회수 증가
+        
+        storeService.plusViewCount(storeId);
         
         StoreVO store = storeService.getStoreDetail(storeId);
         List<MenuVO> menuList = storeService.getMenuList(storeId);
         
-        // 실시간 대기 팀 수 조회 (관리자 대시보드와 동기화)
         int currentWaitCount = waitService.get_current_wait_count(storeId);
         model.addAttribute("currentWaitCount", currentWaitCount);
 
@@ -118,7 +112,6 @@ public class StoreController {
             store.setAvg_rating(rateVal != null ? Double.parseDouble(String.valueOf(rateVal)) : 0.0);
         }
 
-        // 상세페이지 전용: 최근 리뷰 최대 3개까지만 추출
         List<ReviewVO> reviewList = reviewService.getStoreReviews(storeId);
         if (reviewList != null && reviewList.size() > 3) {
             reviewList = reviewList.subList(0, 3);
@@ -128,17 +121,16 @@ public class StoreController {
         model.addAttribute("menuList", menuList);
         model.addAttribute("reviewList", reviewList);
         model.addAttribute("kakaoJsKey", kakaoJsKey);
-        model.addAttribute("impInit", impInit);	// portone 결제를 위한 변수
-        model.addAttribute("pg", pg);	// portone 결제를 위한 변수
+        model.addAttribute("impInit", impInit);
+        model.addAttribute("pg", pg);
 
-        // 리뷰 작성 자격 체크
         boolean canWriteReview = (principal != null) && reviewService.checkReviewEligibility(principal.getName(), storeId);
         model.addAttribute("canWriteReview", canWriteReview);
         
         return "store/store_detail";
     }
     
-    // 3. 전체 리뷰 게시판 조회 (일반 회원 접근 허용 경로)
+    // 3. 전체 리뷰 게시판 조회
     @GetMapping("/reviews")
     public String allReviews(@RequestParam("store_id") int storeId, Model model) {
         StoreVO store = storeService.getStoreDetail(storeId);
@@ -150,36 +142,28 @@ public class StoreController {
         return "store/store_reviews";
     }
     
-    /**
-     * [리팩토링] 4. API: 예약 가능 시간 슬롯 동적 조회
-     * 특정 날짜를 기준으로 이미 예약된 슬롯을 제외하고 반환합니다. (중복 예약 방지)
-     */
+    // 4. API: 예약 가능 시간 슬롯 동적 조회
     @GetMapping(value = "/api/timeSlots", produces = "application/json; charset=UTF-8")
     @ResponseBody 
     public List<String> getTimeSlots(@RequestParam("store_id") int storeId, 
                                    @RequestParam("book_date") String bookDate) {
         StoreVO store = storeService.getStoreDetail(storeId);
-        // DB에서 해당 날짜의 예약 현황을 체크하여 남은 시간만 생성하는 서비스 메서드 호출
         return storeService.getAvailableTimeSlots(store, bookDate);
     }
 
     // ================= [실시간 매장 관리: 점주 전용] =================
 
-    // 웨이팅 상태 제어 (호출 -> 입장확인 -> 식사완료)
     @PostMapping("/wait/updateStatus")
     public String updateWaitStatus(@RequestParam("wait_id") int waitId, 
                                    @RequestParam("status") String status,
                                    @RequestParam("user_id") String userId) {
 
         waitService.update_wait_status(waitId, status);
-        
-        // [핵심] 해당 유저의 개인 채널로 "상태 변경됨" 신호를 보냅니다.
         messagingTemplate.convertAndSend("/topic/wait/" + userId, status);
         
         return "redirect:/book/manage"; 
     }
 
-    
     // ================= [가게 및 메뉴 정보 관리] =================
 
     @GetMapping("/register")

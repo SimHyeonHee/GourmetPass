@@ -19,10 +19,25 @@ public class StoreServiceImpl implements StoreService {
     @Autowired
     private StoreMapper storeMapper;
 
-    // 1. 맛집 목록 조회
+    // 1. 맛집 목록 조회 (페이징 반영)
     @Override
-    public List<StoreVO> getStoreList(String category, String region, String keyword) {
-        return storeMapper.getListStore(category, region, keyword);
+    public List<StoreVO> getStoreList(Criteria cri) {
+        return storeMapper.getListStore(cri);
+    }
+
+    // 1-1. 전체 데이터 개수 조회
+    @Override
+    public int getTotal(Criteria cri) {
+        return storeMapper.getTotalCount(cri);
+    }
+
+    /**
+     * [추가] 메인 페이지용 인기 맛집 조회 로직
+     * Mapper에서 정의된 상위 6개 매장 조회 SQL을 실행합니다.
+     */
+    @Override
+    public List<StoreVO> getPopularStores() {
+        return storeMapper.selectPopularStore();
     }
 
     // 2. 맛집 상세 조회
@@ -48,7 +63,7 @@ public class StoreServiceImpl implements StoreService {
     @Override
     @Transactional
     public void registerStore(StoreVO vo, String userId) {
-        vo.setUser_id(userId); 
+        vo.setUser_id(userId);
         storeMapper.insertStore(vo);
     }
 
@@ -130,24 +145,14 @@ public class StoreServiceImpl implements StoreService {
         }
     }
 
-    /**
-     * [교정] 13. 실시간 예약 가능 시간 슬롯 동적 생성
-     * 기능: 전체 시간표에서 이미 DB에 예약된 시간을 제외하고 반환하여 중복 예약을 원천 차단합니다.
-     */
+    // 13. 실시간 예약 가능 시간 슬롯 동적 생성
     @Override
     public List<String> getAvailableTimeSlots(StoreVO store, String bookDate) {
-        // 1. 가게 설정에 기반한 전체 타임슬롯 생성
         List<String> allSlots = generateTimeSlots(store);
-        
-        // 2. DB에서 해당 날짜에 이미 예약된 시간 목록 조회
-        // (주의: StoreMapper 인터페이스와 XML에 getBookedTimes가 정의되어야 함)
         List<String> bookedTimes = storeMapper.getBookedTimes(store.getStore_id(), bookDate);
-        
-        // 3. 전체 슬롯에서 이미 점유된 시간들을 제거
         if (bookedTimes != null && !bookedTimes.isEmpty()) {
             allSlots.removeAll(bookedTimes);
         }
-        
         return allSlots;
     }
 
