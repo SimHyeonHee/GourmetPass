@@ -57,7 +57,7 @@
 			user_lat = #{user_lat, jdbcType=NUMERIC},
 			user_lon = #{user_lon, jdbcType=NUMERIC},
 			<if test="user_pw != null and user_pw != ''">
-				, user_pw = #{user_pw}
+				user_pw = #{user_pw}
 			</if>
 		</set>
 		WHERE user_id = #{user_id}
