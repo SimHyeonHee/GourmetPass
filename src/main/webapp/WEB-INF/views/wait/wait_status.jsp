@@ -316,9 +316,9 @@ APP_CONFIG.activeStoreId = "${not empty activeWait ? activeWait.store_id : (not 
 					<div class="history-actions">
 						<%-- 리뷰 작성 버튼 (방문 완료 상태이고 리뷰가 없을 때만) --%>
 						<c:if test="${w.wait_status == 'FINISH'}">
-							<button class="btn-small btn-payment"
+<!-- 							<button class="btn-small btn-payment"
 								onclick="alert('결제/영수증 상세 페이지로 이동합니다.')">결제내역</button>
-							<c:choose>
+ -->							<c:choose>
 								<c:when test="${empty w.review_id}">
 									<button class="btn-small btn-review"
 										onclick="location.href='<c:url value='/review/write?store_id=${w.store_id}&wait_id=${w.wait_id}'/>'">리뷰

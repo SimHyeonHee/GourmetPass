@@ -2,6 +2,9 @@
 package com.uhi.gourmet.wait;
 
 import java.security.Principal;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
@@ -10,6 +13,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+
 import com.uhi.gourmet.member.MemberService;
 
 @Controller
@@ -109,15 +114,28 @@ public class WaitController {
      * [4] 웨이팅 취소
      */
     @PostMapping("/cancel")
-    public String cancel_wait(@RequestParam("wait_id") int wait_id) {
-        WaitVO wait = wait_service.get_wait_detail(wait_id);
-        wait_service.update_wait_status(wait_id, "CANCELLED");
+    @ResponseBody  // 추가!
+    public Map<String, Object> cancel_wait(@RequestParam("wait_id") int wait_id) {
+        Map<String, Object> result = new HashMap<>();
         
-        if (wait != null) {
-            // 내가 취소해도 다른 사람들의 대기 팀 수가 줄어들어야 하므로 전체 신호 발송
-            messaging_template.convertAndSend("/topic/store/" + wait.getStore_id() + "/waitUpdate", "REFRESH");
+        try {
+            WaitVO wait = wait_service.get_wait_detail(wait_id);
+            wait_service.update_wait_status(wait_id, "CANCELLED");
+            
+            if (wait != null) {
+                messaging_template.convertAndSend(
+                    "/topic/store/" + wait.getStore_id() + "/waitUpdate", 
+                    "REFRESH"
+                );
+            }
+            
+            result.put("success", true);
+            
+        } catch (Exception e) {
+            result.put("success", false);
+            result.put("message", e.getMessage());
         }
         
-        return "redirect:/wait/status";
+        return result;
     }
 }
