@@ -148,48 +148,63 @@ $(document).ready(function() {
             url: contextPath + "/book/api/checkDuplicate",
             type: "GET",
             data: { store_id: storeId, book_date: bookDate, book_time: selectedTime },
-            success: function(result) {
+            // V2 결제창이 Promise 기반이므로 콜백에 async 추가
+            success: async function(result) {
                 if (result === "AVAILABLE") {
                     if(!confirm(bookDate + " " + selectedTime + " 예약을 위해 결제를 진행하시겠습니까?")) return;
 
-                    // [Step 2] 아임포트 결제창 호출
-                    const IMP = window.IMP;
-                    IMP.init(loginUserInfo.impInit);	// properties 변수 할당
-                    IMP.request_pay({
-                        pg: loginUserInfo.pg,	// properties 변수 할당
-                        pay_method: "card",
-                        merchant_uid: "pay-" + new Date().getTime(),
-                        name: "예약 보증금",
-                        amount: 1,
-                        buyer_email: loginUserInfo.email,
-					    buyer_name:  loginUserInfo.name,
-					    buyer_tel:   loginUserInfo.tel,
-					    buyer_addr:  loginUserInfo.addr,
-					    buyer_postcode: "1111"
-                    }, function (response) {
-                        if (response.success) {
-                            // [Step 3] 결제 성공 시 서버 검증 (POST + CSRF)
+                    try {
+                        // [Step 2] 포트원 V2 결제창 호출
+                        const response = await PortOne.requestPayment({
+                            storeId: loginUserInfo.portOneStoreId, // 본인 Store ID
+                            channelKey: loginUserInfo.portOneChannelKey, // V2 채널 키
+                            paymentId: "pay-" + new Date().getTime(),
+                            orderName: "예약 보증금",
+                            totalAmount: 1000,
+                            currency: "CURRENCY_KRW",
+                            payMethod: "CARD",
+                            customer: {
+                                fullName: loginUserInfo.name,
+                                phoneNumber: loginUserInfo.tel,
+                                email: loginUserInfo.email
+                            }
+                        });
+
+                        // [Step 3] 결제 결과 처리
+                        // V2는 성공 시 response.code가 존재하지 않음(null)
+                        if (response.code == null) {
+                            
+                            // [Step 4] 서버 결제 검증 (V2 방식: JSON 전송)
                             $.ajax({
-                                url: contextPath + '/pay/api/v1/payment/complete',
+                                url: contextPath + '/pay/api/v2/payment/complete',
                                 type: 'POST',
-                                data: { impUid: response.imp_uid },
+                                contentType: 'application/json',
+                                data: JSON.stringify({ paymentId: response.paymentId }),
                                 beforeSend: function(xhr) {
-                                    // Header.jsp의 APP_CONFIG에서 CSRF 토큰 가져오기
                                     if(typeof APP_CONFIG !== 'undefined') {
                                         xhr.setRequestHeader("X-CSRF-TOKEN", APP_CONFIG.csrfToken);
                                     }
                                 }
                             }).done(function(payId) {
+                                // 검증 성공 시 받은 payId를 hidden 필드에 넣고 폼 제출
                                 $("#payIdField").val(payId);
                                 alert("결제가 완료되었습니다!");
-                                form.submit(); // 컨트롤러로 최종 폼 전송
-                            }).fail(function() {
+                                form.submit(); 
+                            }).fail(function(xhr) {
+                                console.error("서버 검증 실패:", xhr.responseText);
                                 alert("결제 검증에 실패했습니다. 관리자에게 문의하세요.");
                             });
+
                         } else {
-                            alert("결제가 취소되었습니다: " + response.error_msg);
+                            // 결제창 실패 또는 사용자가 닫음
+                            alert("결제가 취소되었습니다: " + response.message);
                         }
-                    });
+
+                    } catch (err) {
+                        console.error("결제 프로세스 에러:", err);
+                        alert("결제창을 불러오는 중 오류가 발생했습니다.");
+                    }
+
                 } else if (result === "DUPLICATE_TIME") {
                     alert("죄송합니다. 그 사이에 예약이 마감되었습니다.");
                     window.loadAvailableSlots();

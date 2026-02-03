@@ -37,7 +37,7 @@ $(document).ready(function() {
     // 식사완료, 노쇼시의 환불 로직 JAVASCRIPT
 function cancelPay(pay_id, form) {	// pay_id 를 매개변수로 가져와서
     $.ajax({
-        "url": APP_CONFIG.contextPath+"/pay/api/v1/payment/refund",
+        "url": APP_CONFIG.contextPath+"/pay/api/v2/payment/refund",
         "type": "POST",
         "contentType": "application/json",
         "data": JSON.stringify({
@@ -46,11 +46,11 @@ function cancelPay(pay_id, form) {	// pay_id 를 매개변수로 가져와서
         //  post 수행하기위해 토큰만 주입
         beforeSend: function(xhr) {
         	console.log("AJAX 발송 직전 헤더 설정 시도 중...");
-    console.log("설정할 토큰 값:", APP_CONFIG.csrfToken);
-    
-    if (!APP_CONFIG.csrfToken) {
-        console.error("보낼 토큰이 없습니다! APP_CONFIG를 확인하세요.");
-    }
+		    console.log("설정할 토큰 값:", APP_CONFIG.csrfToken);
+		    
+		    if (!APP_CONFIG.csrfToken) {
+		        console.error("보낼 토큰이 없습니다! APP_CONFIG를 확인하세요.");
+		    }
         
             xhr.setRequestHeader("X-CSRF-TOKEN", APP_CONFIG.csrfToken);
         },

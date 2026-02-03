@@ -16,7 +16,7 @@ $(document).ready(function() {
     // 사용자의 예약 취소시의 환불 로직 JAVASCRIPT
 function cancelPay(pay_id, form) {	// pay_id 를 매개변수로 가져와서
     $.ajax({
-        "url": APP_CONFIG.contextPath+"/pay/api/v1/payment/refund",
+        "url": APP_CONFIG.contextPath+"/pay/api/v2/payment/refund",
         "type": "POST",
         "contentType": "application/json",
         "data": JSON.stringify({

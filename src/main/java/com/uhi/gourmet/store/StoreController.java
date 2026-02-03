@@ -52,10 +52,11 @@ public class StoreController {
     @Value("${kakao.js.key}")
     private String kakaoJsKey;
     
-    @Value("${portone.imp.init}")
-    private String impInit;
-    @Value("${portone.pg}")
-    private String pg;
+	/* portOne 관련 값 */
+    @Value("${portone.store.id}")
+    private String portOneStoreId;
+    @Value("${portone.channel.key}")
+    private String portOneChannelKey;
 
     /**
      * [리팩토링] 1. 맛집 목록 조회 (페이징 및 동적 필터링 반영)
@@ -95,6 +96,7 @@ public class StoreController {
             model.addAttribute("loginUser", loginUser);
         }
         
+        
         storeService.plusViewCount(storeId);
         
         StoreVO store = storeService.getStoreDetail(storeId);
@@ -121,8 +123,8 @@ public class StoreController {
         model.addAttribute("menuList", menuList);
         model.addAttribute("reviewList", reviewList);
         model.addAttribute("kakaoJsKey", kakaoJsKey);
-        model.addAttribute("impInit", impInit);
-        model.addAttribute("pg", pg);
+        model.addAttribute("portOneStoreId", portOneStoreId);
+        model.addAttribute("portOneChannelKey", portOneChannelKey);
 
         boolean canWriteReview = (principal != null) && reviewService.checkReviewEligibility(principal.getName(), storeId);
         model.addAttribute("canWriteReview", canWriteReview);

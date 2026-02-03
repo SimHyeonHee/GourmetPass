@@ -6,12 +6,12 @@
 	<insert id="insertPayment">
 		 INSERT INTO PAY (
         PAY_ID,
-        IMP_UID, 
+        PAYMENT_ID, 
         AMOUNT,
         PAY_DATE) 
         VALUES (
         SEQ_PAY.NEXTVAL,
-        #{imp_uid},
+        #{payment_id},
         #{amount},
         SYSDATE)
 	</insert>
@@ -22,7 +22,7 @@
     </select>
     
     <select id="getPayIdByImpUid">
-        SELECT pay_id FROM PAY WHERE imp_uid = #{imp_uid}
+        SELECT pay_id FROM PAY WHERE payment_id = #{payment_id}
     </select>
 
 	<delete id="deletePayById">

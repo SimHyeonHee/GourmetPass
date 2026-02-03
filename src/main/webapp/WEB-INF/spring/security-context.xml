@@ -57,7 +57,7 @@
 			'ROLE_USER')" /> <security:intercept-url pattern="/pay/api/**" access="hasRole('ROLE_USER')" 
 			/> -->
 		<security:intercept-url
-			pattern="/pay/api/v1/payment/refund**"
+			pattern="/pay/api/v2/payment/refund**"
 			access="hasAnyRole('ROLE_OWNER', 'ROLE_USER')" />
 		<security:intercept-url pattern="/pay/api/**"
 			access="hasRole('ROLE_USER')" />

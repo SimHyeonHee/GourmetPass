@@ -13,7 +13,7 @@ public interface PaymentMapper {
 	
 	public PayVO getPayById(int pay_id);
 	
-	public int getPayIdByImpUid(String impUid);
+	public int getPayIdByImpUid(String payment_id);
 	
 	public int deletePayById(int pay_id);
 	

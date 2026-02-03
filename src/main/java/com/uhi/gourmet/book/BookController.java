@@ -124,6 +124,9 @@ public class BookController {
 		
 		if (principal == null) return "redirect:/member/login";
 		
+		System.out.println("date : " + date);
+		System.out.println("time : " + time);
+		
 		BookVO vo = new BookVO();
 	    // 1. 여기서 문자열일 때 미리 합쳐서 Date 객체로 만듭니다.
 	    try {

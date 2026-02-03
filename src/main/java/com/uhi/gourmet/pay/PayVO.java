@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 @Data
 public class PayVO {
 	private int pay_id;
-	private String imp_uid;
+	private String payment_id;
 	private int amount;
 	private Date pay_date;
 	
